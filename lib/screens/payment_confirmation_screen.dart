@@ -2,16 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../helpers/database_helper.dart';
 import '../models/balance.dart';
+import '../models/contribution.dart';
+import '../models/contribution.dart';
 import '../models/transaction.dart';
 import '../widgets/receipt_modal.dart';
 import 'touch_n_go_homepage.dart';
 
 class PaymentConfirmationScreen extends StatefulWidget {
   final String merchantName;
+  final double? ecoPayAmount;
 
   const PaymentConfirmationScreen({
     super.key,
     required this.merchantName,
+    this.ecoPayAmount,
   });
 
   @override
@@ -356,16 +360,28 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
     try {
       final double amount = double.parse(_amountController.text);
-      
+      final double totalAmount = amount + (widget.ecoPayAmount ?? 0);
+
       // Process payment using DatabaseHelper
       final success = await _databaseHelper.processPayment(
         widget.merchantName,
-        amount,
+        totalAmount,
       );
 
       if (success) {
+        if (widget.ecoPayAmount != null && widget.ecoPayAmount! > 0) {
+          print('DEBUG: PaymentConfirmation - Creating contribution record');
+          final contribution = Contribution(
+            userId: 1, // Assuming user ID 1
+            projectId: 1, // Assuming project ID 1
+            amount: widget.ecoPayAmount!,
+            timestamp: DateTime.now(),
+          );
+          await _databaseHelper.insertContribution(contribution);
+          print('DEBUG: PaymentConfirmation - Contribution record created');
+        }
         // Payment successful - show receipt modal
-        await _showReceiptModal(amount);
+        await _showReceiptModal(totalAmount);
       } else {
         // Payment failed - show error
         _showErrorSnackBar('Payment failed. Please try again.');
@@ -379,43 +395,47 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     }
   }
 
-  Future<void> _showReceiptModal(double amount) async {
-    print('DEBUG: PaymentConfirmation - _showReceiptModal called with amount: $amount');
-    
+  Future<void> _showReceiptModal(double totalAmount) async {
+    print('DEBUG: PaymentConfirmation - _showReceiptModal called with amount: $totalAmount');
+
     // Get the latest balance after payment
     final updatedBalance = await _databaseHelper.getBalance();
     print('DEBUG: PaymentConfirmation - Updated balance after payment: ${updatedBalance.amount}');
-    
+
     // Get the latest transaction from database to ensure correct transaction ID
     final transactions = await _databaseHelper.getTransactions();
     Transaction? latestTransaction;
-    
+
     if (transactions.isNotEmpty) {
       // Find the most recent transaction that matches our merchant and amount
       latestTransaction = transactions.firstWhere(
-        (t) => t.merchantName == widget.merchantName && t.amount == amount,
+        (t) => t.merchantName == widget.merchantName && t.amount == totalAmount,
         orElse: () => transactions.first,
       );
     }
-    
+
     // Fallback: Create transaction object if not found (shouldn't happen normally)
-    final transaction = latestTransaction ?? Transaction(
-      transactionId: Transaction.generateTransactionId(),
-      merchantName: widget.merchantName,
-      amount: amount,
-      remainingBalance: updatedBalance.amount,
-      transactionDate: DateTime.now(),
-      status: 'completed',
-    );
+    final transaction = latestTransaction ??
+        Transaction(
+          transactionId: Transaction.generateTransactionId(),
+          merchantName: widget.merchantName,
+          amount: totalAmount,
+          remainingBalance: updatedBalance.amount,
+          transactionDate: DateTime.now(),
+          status: 'completed',
+        );
 
     if (mounted) {
       print('DEBUG: PaymentConfirmation - About to show receipt dialog');
-      
+
       // Show the receipt modal and wait for it to close
       await showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => ReceiptModal(transaction: transaction),
+        builder: (context) => ReceiptModal(
+          transaction: transaction,
+          ecoPayAmount: widget.ecoPayAmount,
+        ),
       );
       
       print('DEBUG: PaymentConfirmation - Receipt dialog closed');

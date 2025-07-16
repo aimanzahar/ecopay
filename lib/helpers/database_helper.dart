@@ -4,6 +4,8 @@ import 'package:path/path.dart';
 import 'package:flutter/foundation.dart';
 import '../models/balance.dart';
 import '../models/transaction.dart' as AppTransaction;
+import '../models/user.dart';
+import '../models/contribution.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -20,16 +22,19 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
+    print('DEBUG: DatabaseHelper._initDatabase - Initializing database');
     // Initialize the database factory for web
     if (kIsWeb) {
       databaseFactory = databaseFactoryFfi;
     }
 
     String path = join(await getDatabasesPath(), 'ecopay.db');
-    return await openDatabase(path, version: 2, onCreate: _createDatabase, onUpgrade: _onUpgrade);
+    print('DEBUG: DatabaseHelper._initDatabase - Database path: $path');
+    return await openDatabase(path, version: 3, onCreate: _createDatabase, onUpgrade: _onUpgrade);
   }
 
   Future<void> _createDatabase(Database db, int version) async {
+    print('DEBUG: DatabaseHelper._createDatabase - Creating new database version: $version');
     await db.execute('''
       CREATE TABLE balance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,6 +56,57 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        ecopay_opt_in INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        cost_per_unit REAL NOT NULL,
+        unit_label TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE contributions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        project_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        transaction_id TEXT,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (project_id) REFERENCES projects (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE achievements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        target TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE user_achievements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        achievement_id INTEGER NOT NULL,
+        date_unlocked TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (achievement_id) REFERENCES achievements (id)
+      )
+    ''');
+
     // Insert initial balance
     await db.insert('balance', {
       'amount': 96.54,
@@ -59,7 +115,9 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    print('DEBUG: DatabaseHelper._onUpgrade - Upgrading from version $oldVersion to $newVersion');
     if (oldVersion < 2) {
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 2');
       await db.execute('''
         CREATE TABLE transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,6 +128,55 @@ class DatabaseHelper {
           transactionDate TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'completed',
           notes TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 3) {
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 3');
+      await db.execute('''
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          ecopay_opt_in INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE projects (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          cost_per_unit REAL NOT NULL,
+          unit_label TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE contributions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          amount REAL NOT NULL,
+          transaction_id TEXT,
+          timestamp TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (project_id) REFERENCES projects (id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE achievements (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          target TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE user_achievements (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          achievement_id INTEGER NOT NULL,
+          date_unlocked TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (achievement_id) REFERENCES achievements (id)
         )
       ''');
     }
@@ -214,5 +321,56 @@ class DatabaseHelper {
   Future<void> close() async {
     final db = await database;
     await db.close();
+  }
+
+  // User methods
+  Future<void> insertUser(User user) async {
+    final db = await database;
+    await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<User?> getUser(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps.first);
+    }
+    // Create a default user if none exists
+    final defaultUser = User(id: 1, name: 'Default User', ecopayOptIn: false);
+    await insertUser(defaultUser);
+    return defaultUser;
+  }
+
+  Future<void> updateUser(User user) async {
+    final db = await database;
+    await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
+
+  // Contribution methods
+  Future<void> insertContribution(Contribution contribution) async {
+    final db = await database;
+    await db.insert('contributions', contribution.toMap());
+  }
+
+  Future<List<Contribution>> getContributionsByUser(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'contributions',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'timestamp DESC',
+    );
+    return List.generate(maps.length, (i) {
+      return Contribution.fromMap(maps[i]);
+    });
   }
 }

@@ -4,10 +4,12 @@ import '../models/transaction.dart';
 
 class ReceiptModal extends StatelessWidget {
   final Transaction transaction;
+  final double? ecoPayAmount;
 
   const ReceiptModal({
     super.key,
     required this.transaction,
+    this.ecoPayAmount,
   });
 
   @override
@@ -107,8 +109,14 @@ class ReceiptModal extends StatelessWidget {
           _buildReceiptRow('Date & Time', transaction.getFormattedDateTime()),
           _buildReceiptRow('Merchant', transaction.merchantName),
           _buildReceiptRow('Amount', transaction.getFormattedAmount()),
+          if (ecoPayAmount != null && ecoPayAmount! > 0)
+            _buildReceiptRow('EcoPay Donation', 'RM ${ecoPayAmount!.toStringAsFixed(2)}'),
           _buildReceiptRow('Remaining Balance', transaction.getFormattedRemainingBalance()),
           _buildReceiptRow('Status', _getStatusText()),
+          if (ecoPayAmount != null && ecoPayAmount! > 0) ...[
+            const SizedBox(height: 20),
+            _buildEcoPayConfirmation(),
+          ],
           const SizedBox(height: 20),
           _buildDivider(),
           const SizedBox(height: 20),
@@ -162,6 +170,28 @@ class ReceiptModal extends StatelessWidget {
             Colors.grey.withOpacity(0.1),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildEcoPayConfirmation() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.park, color: Colors.green, size: 28),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              'Thank you for your contribution! You just planted 0.5 trees.',
+              style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
     );
   }

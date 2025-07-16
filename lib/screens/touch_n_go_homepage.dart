@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'dart:math';
 import '../helpers/database_helper.dart';
 import '../models/balance.dart';
 import 'qr_scanner_screen.dart';

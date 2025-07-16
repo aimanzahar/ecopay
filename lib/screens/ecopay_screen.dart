@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
+import '../helpers/database_helper.dart';
+import '../models/user.dart';
+import '../models/contribution.dart';
+import 'achievements_screen.dart';
+import 'challenges_screen.dart';
+import 'leaderboard_screen.dart';
+import 'local_projects_screen.dart';
+import 'transaction_history_screen.dart';
 
 class EcoPayScreen extends StatefulWidget {
   const EcoPayScreen({super.key});
@@ -8,6 +16,51 @@ class EcoPayScreen extends StatefulWidget {
 }
 
 class _EcoPayScreenState extends State<EcoPayScreen> {
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  User? _user;
+  List<Contribution> _contributions = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      _isLoading = true;
+    });
+    // Assuming user ID 1 for this example
+    final user = await _databaseHelper.getUser(1);
+    if (user != null) {
+      final contributions = await _databaseHelper.getContributionsByUser(user.id!);
+      setState(() {
+        _user = user;
+        _contributions = contributions;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateOptInStatus(bool value) async {
+    if (_user != null) {
+      final updatedUser = User(
+        id: _user!.id,
+        name: _user!.name,
+        ecopayOptIn: value,
+      );
+      await _databaseHelper.updateUser(updatedUser);
+      setState(() {
+        _user = updatedUser;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,26 +82,39 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildESGFeatures(),
-            const SizedBox(height: 30),
-            _buildCarbonTracker(),
-            const SizedBox(height: 30),
-            _buildGreenRewards(),
-            const SizedBox(height: 30),
-            _buildSustainabilityTips(),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildOptInSwitch(),
+                  if (_user?.ecopayOptIn ?? false)
+                    Column(
+                      children: [
+                        _buildHeader(),
+                        const SizedBox(height: 20),
+                        _buildESGFeatures(),
+                        const SizedBox(height: 30),
+                        _buildCarbonTracker(),
+                        const SizedBox(height: 30),
+                        _buildGreenRewards(),
+                        const SizedBox(height: 30),
+                        _buildSustainabilityTips(),
+                        const SizedBox(height: 20),
+                      ],
+                    )
+                  else
+                    _buildOptInMessage(),
+                ],
+              ),
+            ),
     );
   }
 
   Widget _buildHeader() {
+    final double totalDonated = _contributions.fold(0.0, (sum, item) => sum + item.amount);
+    final double co2Offset = totalDonated * 0.12; 
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -65,15 +131,12 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       ),
       child: Column(
         children: [
-          // Logo
           Image.asset(
             'assets/images/EcoPayIconremovebg.png',
             height: 120,
             fit: BoxFit.contain,
           ),
-
           const SizedBox(height: 20),
-
           Text(
             '🌱 Welcome to EcoPay',
             style: TextStyle(
@@ -82,9 +145,7 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               color: Colors.green.shade700,
             ),
           ),
-
           const SizedBox(height: 8),
-
           Text(
             'Your sustainable payment solution',
             style: TextStyle(
@@ -92,9 +153,7 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               color: Colors.green.shade600,
             ),
           ),
-
           const SizedBox(height: 8),
-
           Text(
             '"Every ringgit you spend, the Earth thanks you 🌍"',
             textAlign: TextAlign.center,
@@ -104,17 +163,15 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               color: Colors.green.shade600,
             ),
           ),
-
           const SizedBox(height: 20),
-
           Row(
             children: [
               Expanded(
-                child: _buildStatCard('127kg', 'CO₂ Saved', Colors.green.shade600, Icons.eco),
+                child: _buildStatCard('${co2Offset.toStringAsFixed(1)}kg', 'CO₂ Saved', Colors.green.shade600, Icons.eco),
               ),
               const SizedBox(width: 15),
               Expanded(
-                child: _buildStatCard('45', 'Green Transactions', Colors.green.shade600, Icons.nature_people),
+                child: _buildStatCard('${_contributions.length}', 'Green Transactions', Colors.green.shade600, Icons.nature_people),
               ),
             ],
           ),
@@ -168,9 +225,7 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('ESG Features', style: _sectionTitleStyle()),
-
           const SizedBox(height: 15),
-
           _buildFeatureCard('🌍 Environmental Impact', 'Track your carbon footprint and offset emissions', Colors.green.shade50, Icons.public),
           const SizedBox(height: 12),
           _buildFeatureCard('👥 Social Responsibility', 'Support local communities and social causes', Colors.blue.shade50, Icons.group),
@@ -380,7 +435,59 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
     );
   }
 
-  // Typography styles
+  Widget _buildOptInSwitch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Enable EcoPay',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Switch(
+            value: _user?.ecopayOptIn ?? false,
+            onChanged: (value) {
+              _updateOptInStatus(value);
+            },
+            activeColor: Colors.green,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptInMessage() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.eco,
+            size: 100,
+            color: Colors.green.withOpacity(0.7),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Join EcoPay!',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Enable EcoPay to round up your transactions and contribute to environmental projects.',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   TextStyle _sectionTitleStyle() => TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700);
   TextStyle _cardTitleStyle() => TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade700);
   TextStyle _cardDescStyle() => TextStyle(fontSize: 14, color: Colors.green.shade600);
