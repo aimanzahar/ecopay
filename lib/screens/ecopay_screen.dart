@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../helpers/database_helper.dart';
+import '../models/user.dart';
 
 class EcoPayScreen extends StatefulWidget {
   const EcoPayScreen({super.key});
@@ -8,6 +10,42 @@ class EcoPayScreen extends StatefulWidget {
 }
 
 class _EcoPayScreenState extends State<EcoPayScreen> {
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  User? _user;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    setState(() {
+      _isLoading = true;
+    });
+    // Assuming user ID 1 for this example
+    final user = await _databaseHelper.getUser(1);
+    setState(() {
+      _user = user;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _updateOptInStatus(bool value) async {
+    if (_user != null) {
+      final updatedUser = User(
+        id: _user!.id,
+        name: _user!.name,
+        ecopayOptIn: value,
+      );
+      await _databaseHelper.updateUser(updatedUser);
+      setState(() {
+        _user = updatedUser;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -29,36 +67,42 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Header with plant animation
-            _buildHeader(),
-            
-            const SizedBox(height: 20),
-            
-            // ESG Features
-            _buildESGFeatures(),
-            
-            const SizedBox(height: 30),
-            
-            // Carbon Footprint Tracker
-            _buildCarbonTracker(),
-            
-            const SizedBox(height: 30),
-            
-            // Green Rewards
-            _buildGreenRewards(),
-            
-            const SizedBox(height: 30),
-            
-            // Sustainability Tips
-            _buildSustainabilityTips(),
-            
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildOptInSwitch(),
+                  if (_user?.ecopayOptIn ?? false) ...[
+                    // Header with plant animation
+                    _buildHeader(),
+                    
+                    const SizedBox(height: 20),
+                    
+                    // ESG Features
+                    _buildESGFeatures(),
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Carbon Footprint Tracker
+                    _buildCarbonTracker(),
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Green Rewards
+                    _buildGreenRewards(),
+                    
+                    const SizedBox(height: 30),
+                    
+                    // Sustainability Tips
+                    _buildSustainabilityTips(),
+                    
+                    const SizedBox(height: 20),
+                  ] else
+                    _buildOptInMessage(),
+                ],
+              ),
+            ),
     );
   }
 
@@ -544,6 +588,58 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+Widget _buildOptInSwitch() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            'Enable EcoPay',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          Switch(
+            value: _user?.ecopayOptIn ?? false,
+            onChanged: (value) {
+              _updateOptInStatus(value);
+            },
+            activeColor: Colors.green,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOptInMessage() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.eco,
+            size: 100,
+            color: Colors.green.withOpacity(0.7),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Join EcoPay!',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Enable EcoPay to round up your transactions and contribute to environmental projects.',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
           ),
         ],
       ),

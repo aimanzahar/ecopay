@@ -4,6 +4,10 @@ import 'package:path/path.dart';
 import 'package:flutter/foundation.dart';
 import '../models/balance.dart';
 import '../models/transaction.dart' as AppTransaction;
+import '../models/user.dart';
+import '../models/project.dart';
+import '../models/contribution.dart';
+import '../models/achievement.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -48,6 +52,57 @@ class DatabaseHelper {
         transactionDate TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'completed',
         notes TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        ecopay_opt_in INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE projects (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        cost_per_unit REAL NOT NULL,
+        unit_label TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE contributions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        project_id INTEGER NOT NULL,
+        amount REAL NOT NULL,
+        transaction_id TEXT,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (project_id) REFERENCES projects (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE achievements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        target TEXT NOT NULL
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE user_achievements (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        achievement_id INTEGER NOT NULL,
+        date_unlocked TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (achievement_id) REFERENCES achievements (id)
       )
     ''');
 
@@ -216,3 +271,35 @@ class DatabaseHelper {
     await db.close();
   }
 }
+
+// User methods
+  Future<void> insertUser(User user) async {
+    final db = await database;
+    await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<User?> getUser(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (maps.isNotEmpty) {
+      return User.fromMap(maps.first);
+    }
+    // Create a default user if none exists
+    final defaultUser = User(id: 1, name: 'Default User', ecopayOptIn: false);
+    await insertUser(defaultUser);
+    return defaultUser;
+  }
+
+  Future<void> updateUser(User user) async {
+    final db = await database;
+    await db.update(
+      'users',
+      user.toMap(),
+      where: 'id = ?',
+      whereArgs: [user.id],
+    );
+  }
