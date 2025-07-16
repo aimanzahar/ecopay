@@ -290,7 +290,9 @@ class _QrScannerScreenState extends State<QrScannerScreen>
         );
 
         // Reset processing flag after a delay if no barcode is detected
-        Future.delayed(const Duration(seconds: 5), () {
+        Timer? timeoutTimer;
+        timeoutTimer = Timer(const Duration(seconds: 5), () {
+          print('DEBUG: Image analysis timeout check - mounted: $mounted, processing: $_isProcessing');
           if (_isProcessing && mounted) {
             print('DEBUG: Image analysis timeout - no QR code callback received');
             setState(() {
@@ -300,7 +302,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               'No QR Code Found',
               'No valid payment QR code found in the selected image.\n\nPlease ensure the image contains a clear, well-lit QR code.',
             );
+          } else if (!mounted) {
+            print('DEBUG: Widget disposed before timeout callback - avoiding setState');
           }
+          timeoutTimer?.cancel();
         });
       } else {
         print('DEBUG: Image analysis returned false - no QR code detected');

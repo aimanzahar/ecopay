@@ -15,7 +15,10 @@ class ReceiptModal extends StatelessWidget {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.of(context).size.height * 0.9,
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -24,7 +27,11 @@ class ReceiptModal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHeader(),
-            _buildReceiptContent(),
+            Flexible(
+              child: SingleChildScrollView(
+                child: _buildReceiptContent(),
+              ),
+            ),
             _buildFooter(context),
           ],
         ),
