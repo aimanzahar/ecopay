@@ -92,17 +92,33 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   void _handleBarcode(BarcodeCapture capture) {
-    if (_isProcessing) return;
+    print('DEBUG: _handleBarcode called');
+    print('DEBUG: Current processing state: $_isProcessing');
+    
+    if (_isProcessing) {
+      print('DEBUG: Already processing, returning');
+      return;
+    }
 
     final List<Barcode> barcodes = capture.barcodes;
-    if (barcodes.isEmpty) return;
+    print('DEBUG: Number of barcodes detected: ${barcodes.length}');
+    
+    if (barcodes.isEmpty) {
+      print('DEBUG: No barcodes in capture, returning');
+      return;
+    }
 
     final String? code = barcodes.first.rawValue;
-    if (code == null || code.isEmpty) return;
+    print('DEBUG: Raw barcode value: ${code?.length ?? 0} characters');
+    
+    if (code == null || code.isEmpty) {
+      print('DEBUG: Code is null or empty, returning');
+      return;
+    }
 
-    print('QR Code detected: ${code.length} characters');
+    print('DEBUG: QR Code detected: ${code.length} characters');
     print(
-      'QR Code content: ${code.substring(0, code.length > 200 ? 200 : code.length)}...',
+      'DEBUG: QR Code content: ${code.substring(0, code.length > 200 ? 200 : code.length)}...',
     );
 
     setState(() {
@@ -114,11 +130,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
     // Parse the QR code
     final qrData = DuitnowQrParser.parseQrData(code);
-    print('Parsed QR data: $qrData');
+    print('DEBUG: Parsed QR data: $qrData');
 
     if (qrData['isValid'] == 'true') {
       final merchantName = qrData['merchantName'] ?? 'Unknown Merchant';
-      print('Valid QR code found, merchant: $merchantName');
+      print('DEBUG: Valid QR code found, merchant: $merchantName');
 
       // Navigate to payment confirmation with parsed data
       Navigator.of(context).pushReplacement(
@@ -131,7 +147,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       // Show error for invalid QR code with more detailed information
       final errorMsg =
           qrData['error'] ?? 'This QR code is not a valid payment code.';
-      print('Invalid QR code: $errorMsg');
+      print('DEBUG: Invalid QR code: $errorMsg');
 
       _showErrorDialog(
         'QR Code Not Supported',
@@ -203,33 +219,33 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
   Future<void> _pickImageFromGallery() async {
     try {
+      print('DEBUG: Starting gallery image picker');
+      
       // Check current photo permission status
       final photoStatus = await Permission.photos.status;
+      print('DEBUG: Photo permission status: $photoStatus');
 
       PermissionStatus permission;
       if (photoStatus == PermissionStatus.granted) {
         permission = photoStatus;
       } else {
         // Request permission
+        print('DEBUG: Requesting photo permission');
         permission = await Permission.photos.request();
+        print('DEBUG: Photo permission after request: $permission');
       }
 
       if (permission == PermissionStatus.granted) {
-        setState(() {
-          _isProcessing = true;
-        });
-
         final XFile? image = await _imagePicker.pickImage(
           source: ImageSource.gallery,
           imageQuality: 100,
         );
 
         if (image != null) {
+          print('DEBUG: Image selected from gallery: ${image.path}');
           await _analyzeImageForQR(image.path);
         } else {
-          setState(() {
-            _isProcessing = false;
-          });
+          print('DEBUG: No image selected from gallery');
         }
       } else if (permission == PermissionStatus.permanentlyDenied) {
         _showPermissionDialog(
@@ -254,11 +270,15 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
   Future<void> _analyzeImageForQR(String imagePath) async {
     try {
-      print('Analyzing image: $imagePath');
+      print('DEBUG: Starting image analysis for: $imagePath');
+      print('DEBUG: Processing flag: $_isProcessing');
+      print('DEBUG: Subscription active: ${_subscription != null}');
+      
       final bool result = await controller.analyzeImage(imagePath);
-      print('Image analysis result: $result');
+      print('DEBUG: Image analysis result: $result');
 
       if (result) {
+        print('DEBUG: Image analysis returned true - QR code detected');
         // For mobile_scanner 3.x, analyzeImage returns bool and should trigger the normal detection flow
         // The actual barcode data will be processed through the _handleBarcode method
         // Show a message to indicate processing
@@ -271,8 +291,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
         // Reset processing flag after a delay if no barcode is detected
         Future.delayed(const Duration(seconds: 5), () {
-          if (_isProcessing) {
-            print('Image analysis timeout - no QR code detected');
+          if (_isProcessing && mounted) {
+            print('DEBUG: Image analysis timeout - no QR code callback received');
             setState(() {
               _isProcessing = false;
             });
@@ -283,20 +303,15 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           }
         });
       } else {
-        print('No QR code detected in image');
+        print('DEBUG: Image analysis returned false - no QR code detected');
         _showErrorDialog(
           'No QR Code Found',
           'No QR code detected in the selected image.\n\nPlease select an image that contains a clear QR code.',
         );
-        setState(() {
-          _isProcessing = false;
-        });
       }
     } catch (e) {
-      print('Image analysis error: $e');
-      setState(() {
-        _isProcessing = false;
-      });
+      print('DEBUG: Image analysis error: $e');
+      print('DEBUG: Error type: ${e.runtimeType}');
       _showErrorDialog(
         'Analysis Error',
         'Failed to analyze the selected image.\n\nThis may happen if:\n• The image format is not supported\n• The image is corrupted\n• Device limitations\n\nError: $e',
