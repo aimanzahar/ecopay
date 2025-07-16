@@ -491,6 +491,8 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       {'icon': Icons.play_circle_fill, 'label': 'Play Store'},
       {'icon': Icons.eco, 'label': 'EcoPay'},
     ];
+print('DEBUG: TouchNGoHomepage._buildAllServicesGrid - Building grid with ${services.length} services');
+    print('DEBUG: TouchNGoHomepage._buildAllServicesGrid - EcoPay is at index: ${services.indexWhere((s) => s['label'] == 'EcoPay')}');
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -522,8 +524,11 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
 
   Widget _buildGridServiceIcon(IconData icon, String label) {
     return GestureDetector(
+print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Building icon for: $label');
       onTap: () {
+        print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Tapped on: $label');
         if (label == 'EcoPay') {
+          print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Navigating to EcoPay screen');
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) => const EcoPayScreen(),
@@ -538,15 +543,25 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: label == 'EcoPay' 
+                ? Colors.green.withOpacity(0.3) 
+                : Colors.white.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(
+              icon, 
+              color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
+              size: 24
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             label,
-            style: const TextStyle(color: Colors.white, fontSize: 10),
+            style: TextStyle(
+              color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
+              fontSize: 10,
+              fontWeight: label == 'EcoPay' ? FontWeight.bold : FontWeight.normal,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
