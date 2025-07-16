@@ -76,13 +76,17 @@ class DatabaseHelper {
   }
 
   Future<Balance> getBalance() async {
+    print('DEBUG: DatabaseHelper.getBalance - Called');
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query('balance');
 
     if (maps.isNotEmpty) {
-      return Balance.fromMap(maps.first);
+      final balance = Balance.fromMap(maps.first);
+      print('DEBUG: DatabaseHelper.getBalance - Retrieved balance: ${balance.amount}');
+      return balance;
     } else {
       // If no balance exists, create a default one
+      print('DEBUG: DatabaseHelper.getBalance - No balance found, creating default');
       final newBalance = Balance(amount: 76.54, lastUpdated: DateTime.now());
       await insertBalance(newBalance);
       return newBalance;
@@ -149,19 +153,27 @@ class DatabaseHelper {
   }
 
   Future<bool> processPayment(String merchantName, double amount) async {
+    print('DEBUG: DatabaseHelper.processPayment - Starting payment process');
+    print('DEBUG: Merchant: $merchantName, Amount: $amount');
+    
     final db = await database;
     
     // Check if balance is sufficient
     final currentBalance = await getBalance();
+    print('DEBUG: Current balance before payment: ${currentBalance.amount}');
+    
     if (currentBalance.amount < amount) {
+      print('DEBUG: Insufficient balance - payment failed');
       return false; // Insufficient balance
     }
     
     // Calculate new balance
     final newBalance = currentBalance.amount - amount;
+    print('DEBUG: New balance after payment: $newBalance');
     
     // Generate transaction ID
     final transactionId = AppTransaction.Transaction.generateTransactionId();
+    print('DEBUG: Generated transaction ID: $transactionId');
     
     // Create transaction record
     final transaction = AppTransaction.Transaction(
@@ -190,6 +202,7 @@ class DatabaseHelper {
       await txn.insert('transactions', transaction.toMap());
     });
     
+    print('DEBUG: Payment processed successfully - balance updated to: $newBalance');
     return true;
   }
 

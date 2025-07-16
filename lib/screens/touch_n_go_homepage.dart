@@ -20,16 +20,27 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
   @override
   void initState() {
     super.initState();
+    print('DEBUG: TouchNGoHomepage - initState called');
+    _loadBalance();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print('DEBUG: TouchNGoHomepage - didChangeDependencies called');
+    // Refresh balance when returning from other screens
     _loadBalance();
   }
 
   Future<void> _loadBalance() async {
+    print('DEBUG: TouchNGoHomepage._loadBalance - Starting to load balance');
     setState(() {
       _isLoading = true;
     });
 
     try {
       final balance = await _databaseHelper.getBalance();
+      print('DEBUG: TouchNGoHomepage._loadBalance - Loaded balance: ${balance.amount}');
       setState(() {
         _currentBalance = balance;
         _isLoading = false;
