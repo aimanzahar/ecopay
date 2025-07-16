@@ -4,7 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:flutter/foundation.dart';
 import '../models/balance.dart';
-import '../models/transaction.dart';
+import '../models/transaction.dart' as AppTransaction;
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -119,23 +119,23 @@ class DatabaseHelper {
   }
 
   // Transaction methods
-  Future<void> insertTransaction(Transaction transaction) async {
+  Future<void> insertTransaction(AppTransaction.Transaction transaction) async {
     final db = await database;
     await db.insert('transactions', transaction.toMap());
   }
 
-  Future<List<Transaction>> getTransactions() async {
+  Future<List<AppTransaction.Transaction>> getTransactions() async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
       orderBy: 'transactionDate DESC',
     );
     return List.generate(maps.length, (i) {
-      return Transaction.fromMap(maps[i]);
+      return AppTransaction.Transaction.fromMap(maps[i]);
     });
   }
 
-  Future<Transaction?> getTransactionById(String transactionId) async {
+  Future<AppTransaction.Transaction?> getTransactionById(String transactionId) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
@@ -144,7 +144,7 @@ class DatabaseHelper {
     );
     
     if (maps.isNotEmpty) {
-      return Transaction.fromMap(maps.first);
+      return AppTransaction.Transaction.fromMap(maps.first);
     }
     return null;
   }
@@ -162,10 +162,10 @@ class DatabaseHelper {
     final newBalance = currentBalance.amount - amount;
     
     // Generate transaction ID
-    final transactionId = Transaction.generateTransactionId();
+    final transactionId = AppTransaction.Transaction.generateTransactionId();
     
     // Create transaction record
-    final transaction = Transaction(
+    final transaction = AppTransaction.Transaction(
       transactionId: transactionId,
       merchantName: merchantName,
       amount: amount,
