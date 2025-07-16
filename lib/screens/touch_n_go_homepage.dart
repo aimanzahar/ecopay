@@ -1,8 +1,149 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:math';
+import '../helpers/database_helper.dart';
+import '../models/balance.dart';
 
-class TouchNGoHomepage extends StatelessWidget {
+class TouchNGoHomepage extends StatefulWidget {
   const TouchNGoHomepage({super.key});
+
+  @override
+  State<TouchNGoHomepage> createState() => _TouchNGoHomepageState();
+}
+
+class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
+  Balance? _currentBalance;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final balance = await _databaseHelper.getBalance();
+      setState(() {
+        _currentBalance = balance;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // Handle error
+      print('Error loading balance: $e');
+    }
+  }
+
+  Future<void> _showCustomBalanceDialog() async {
+    final TextEditingController amountController = TextEditingController();
+    final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Balance'),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Enter the amount to add to your balance:',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (RM)',
+                    hintText: '0.00',
+                    prefixText: 'RM ',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter an amount';
+                    }
+                    final double? amount = double.tryParse(value);
+                    if (amount == null) {
+                      return 'Please enter a valid number';
+                    }
+                    if (amount <= 0) {
+                      return 'Amount must be greater than 0';
+                    }
+                    if (amount > 10000) {
+                      return 'Amount cannot exceed RM 10,000';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Add Balance'),
+              onPressed: () async {
+                if (formKey.currentState!.validate()) {
+                  final double amount = double.parse(amountController.text);
+                  Navigator.of(context).pop();
+                  await _reloadBalance(amount);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _reloadBalance(double amount) async {
+    try {
+      await _databaseHelper.reloadBalance(amount);
+      await _loadBalance(); // Refresh the balance display
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Balance updated with RM ${amount.toStringAsFixed(2)}',
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      // Handle error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update balance: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,14 +223,23 @@ class TouchNGoHomepage extends StatelessWidget {
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    'RM 76.54',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  _isLoading
+                      ? const Text(
+                          'Loading...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        )
+                      : Text(
+                          'RM ${_currentBalance?.amount.toStringAsFixed(2) ?? '0.00'}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ],
               ),
               Container(
@@ -107,29 +257,32 @@ class TouchNGoHomepage extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add, color: Colors.blue, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      'Reload',
-                      style: TextStyle(
-                        color: Colors.blue,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+              GestureDetector(
+                onTap: _showCustomBalanceDialog,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add, color: Colors.blue, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        'Reload',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const Spacer(),
