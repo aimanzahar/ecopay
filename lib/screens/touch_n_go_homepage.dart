@@ -523,50 +523,49 @@ print('DEBUG: TouchNGoHomepage._buildAllServicesGrid - Building grid with ${serv
   }
 
   Widget _buildGridServiceIcon(IconData icon, String label) {
-    return GestureDetector(
-print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Building icon for: $label');
-      onTap: () {
-        print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Tapped on: $label');
-        if (label == 'EcoPay') {
-          print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Navigating to EcoPay screen');
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const EcoPayScreen(),
-            ),
-          );
-        }
-        // Add more navigation logic for other services if needed
-      },
-      child: Column(
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: label == 'EcoPay' 
-                ? Colors.green.withOpacity(0.3) 
-                : Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon, 
-              color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
-              size: 24
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
-              fontSize: 10,
-              fontWeight: label == 'EcoPay' ? FontWeight.bold : FontWeight.normal,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+return GestureDetector(
+  onTap: () {
+    print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Tapped on: $label');
+    if (label == 'EcoPay') {
+      print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Navigating to EcoPay screen');
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => const EcoPayScreen(),
+        ),
+      );
+    }
+    // Add more navigation logic for other services if needed
+  },
+  child: Column(
+    children: [
+      Container(
+        width: 50,
+        height: 50,
+        decoration: BoxDecoration(
+          color: label == 'EcoPay' 
+            ? Colors.green.withOpacity(0.3) 
+            : Colors.white.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon, 
+          color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
+          size: 24
+        ),
       ),
-    );
+      const SizedBox(height: 8),
+      Text(
+        label,
+        style: TextStyle(
+          color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
+          fontSize: 10,
+          fontWeight: label == 'EcoPay' ? FontWeight.bold : FontWeight.normal,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    ],
+  ),
+);
   }
 
   Widget _buildHighlightsSection() {
