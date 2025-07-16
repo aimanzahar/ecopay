@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:math';
 import '../helpers/database_helper.dart';
 import '../models/balance.dart';
+import 'qr_scanner_screen.dart';
 
 class TouchNGoHomepage extends StatefulWidget {
   const TouchNGoHomepage({super.key});
@@ -328,7 +329,13 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildServiceIcon(Icons.qr_code_scanner, 'Scan'),
+          _buildServiceIcon(Icons.qr_code_scanner, 'Scan', onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const QrScannerScreen(),
+              ),
+            );
+          }),
           _buildServiceIcon(Icons.payment, 'Pay'),
           _buildServiceIcon(Icons.swap_horiz, 'Transfer'),
           _buildServiceIcon(Icons.star, 'GO+'),
@@ -337,21 +344,24 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
     );
   }
 
-  Widget _buildServiceIcon(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+  Widget _buildServiceIcon(IconData icon, String label, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 30),
           ),
-          child: Icon(icon, color: Colors.white, size: 30),
-        ),
-        const SizedBox(height: 8),
-        Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
-      ],
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+        ],
+      ),
     );
   }
 

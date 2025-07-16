@@ -4,6 +4,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:flutter/foundation.dart';
 import '../models/balance.dart';
+import '../models/transaction.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -26,7 +27,7 @@ class DatabaseHelper {
     }
 
     String path = join(await getDatabasesPath(), 'ecopay.db');
-    return await openDatabase(path, version: 1, onCreate: _createDatabase);
+    return await openDatabase(path, version: 2, onCreate: _createDatabase, onUpgrade: _onUpgrade);
   }
 
   Future<void> _createDatabase(Database db, int version) async {
@@ -38,11 +39,41 @@ class DatabaseHelper {
       )
     ''');
 
+    await db.execute('''
+      CREATE TABLE transactions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        transactionId TEXT NOT NULL UNIQUE,
+        merchantName TEXT NOT NULL,
+        amount REAL NOT NULL,
+        remainingBalance REAL NOT NULL,
+        transactionDate TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'completed',
+        notes TEXT
+      )
+    ''');
+
     // Insert initial balance
     await db.insert('balance', {
-      'amount': 76.54,
+      'amount': 96.54,
       'lastUpdated': DateTime.now().toIso8601String(),
     });
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE transactions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          transactionId TEXT NOT NULL UNIQUE,
+          merchantName TEXT NOT NULL,
+          amount REAL NOT NULL,
+          remainingBalance REAL NOT NULL,
+          transactionDate TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'completed',
+          notes TEXT
+        )
+      ''');
+    }
   }
 
   Future<Balance> getBalance() async {
@@ -85,6 +116,87 @@ class DatabaseHelper {
     );
 
     await updateBalance(updatedBalance);
+  }
+
+  // Transaction methods
+  Future<void> insertTransaction(Transaction transaction) async {
+    final db = await database;
+    await db.insert('transactions', transaction.toMap());
+  }
+
+  Future<List<Transaction>> getTransactions() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'transactions',
+      orderBy: 'transactionDate DESC',
+    );
+    return List.generate(maps.length, (i) {
+      return Transaction.fromMap(maps[i]);
+    });
+  }
+
+  Future<Transaction?> getTransactionById(String transactionId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'transactions',
+      where: 'transactionId = ?',
+      whereArgs: [transactionId],
+    );
+    
+    if (maps.isNotEmpty) {
+      return Transaction.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<bool> processPayment(String merchantName, double amount) async {
+    final db = await database;
+    
+    // Check if balance is sufficient
+    final currentBalance = await getBalance();
+    if (currentBalance.amount < amount) {
+      return false; // Insufficient balance
+    }
+    
+    // Calculate new balance
+    final newBalance = currentBalance.amount - amount;
+    
+    // Generate transaction ID
+    final transactionId = Transaction.generateTransactionId();
+    
+    // Create transaction record
+    final transaction = Transaction(
+      transactionId: transactionId,
+      merchantName: merchantName,
+      amount: amount,
+      remainingBalance: newBalance,
+      transactionDate: DateTime.now(),
+      status: 'completed',
+    );
+    
+    // Use database transaction to ensure atomicity
+    await db.transaction((txn) async {
+      // Update balance
+      await txn.update(
+        'balance',
+        {
+          'amount': newBalance,
+          'lastUpdated': DateTime.now().toIso8601String(),
+        },
+        where: 'id = ?',
+        whereArgs: [currentBalance.id],
+      );
+      
+      // Insert transaction record
+      await txn.insert('transactions', transaction.toMap());
+    });
+    
+    return true;
+  }
+
+  Future<bool> hasInsufficientBalance(double amount) async {
+    final currentBalance = await getBalance();
+    return currentBalance.amount < amount;
   }
 
   Future<void> close() async {
