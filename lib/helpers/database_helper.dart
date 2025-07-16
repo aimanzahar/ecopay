@@ -24,16 +24,19 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
+    print('DEBUG: DatabaseHelper._initDatabase - Initializing database');
     // Initialize the database factory for web
     if (kIsWeb) {
       databaseFactory = databaseFactoryFfi;
     }
 
     String path = join(await getDatabasesPath(), 'ecopay.db');
-    return await openDatabase(path, version: 2, onCreate: _createDatabase, onUpgrade: _onUpgrade);
+    print('DEBUG: DatabaseHelper._initDatabase - Database path: $path');
+    return await openDatabase(path, version: 3, onCreate: _createDatabase, onUpgrade: _onUpgrade);
   }
 
   Future<void> _createDatabase(Database db, int version) async {
+    print('DEBUG: DatabaseHelper._createDatabase - Creating new database version: $version');
     await db.execute('''
       CREATE TABLE balance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -114,7 +117,9 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    print('DEBUG: DatabaseHelper._onUpgrade - Upgrading from version $oldVersion to $newVersion');
     if (oldVersion < 2) {
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 2');
       await db.execute('''
         CREATE TABLE transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -125,6 +130,55 @@ class DatabaseHelper {
           transactionDate TEXT NOT NULL,
           status TEXT NOT NULL DEFAULT 'completed',
           notes TEXT
+        )
+      ''');
+    }
+    if (oldVersion < 3) {
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 3');
+      await db.execute('''
+        CREATE TABLE users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          ecopay_opt_in INTEGER NOT NULL DEFAULT 0
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE projects (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          cost_per_unit REAL NOT NULL,
+          unit_label TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE contributions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          project_id INTEGER NOT NULL,
+          amount REAL NOT NULL,
+          transaction_id TEXT,
+          timestamp TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (project_id) REFERENCES projects (id)
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE achievements (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          target TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE user_achievements (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          achievement_id INTEGER NOT NULL,
+          date_unlocked TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (achievement_id) REFERENCES achievements (id)
         )
       ''');
     }
