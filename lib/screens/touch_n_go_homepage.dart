@@ -41,7 +41,9 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
 
     try {
       final balance = await _databaseHelper.getBalance();
-      print('DEBUG: TouchNGoHomepage._loadBalance - Loaded balance: ${balance.amount}');
+      print(
+        'DEBUG: TouchNGoHomepage._loadBalance - Loaded balance: ${balance.amount}',
+      );
       setState(() {
         _currentBalance = balance;
         _isLoading = false;
@@ -341,13 +343,17 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildServiceIcon(Icons.qr_code_scanner, 'Scan', onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const QrScannerScreen(),
-              ),
-            );
-          }),
+          _buildServiceIcon(
+            Icons.qr_code_scanner,
+            'Scan',
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const QrScannerScreen(),
+                ),
+              );
+            },
+          ),
           _buildServiceIcon(Icons.payment, 'Pay'),
           _buildServiceIcon(Icons.swap_horiz, 'Transfer'),
           _buildServiceIcon(Icons.star, 'GO+'),
@@ -371,7 +377,10 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
             child: Icon(icon, color: Colors.white, size: 30),
           ),
           const SizedBox(height: 8),
-          Text(label, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 12),
+          ),
         ],
       ),
     );
@@ -489,10 +498,19 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       {'icon': Icons.games, 'label': 'Goama Games'},
       {'icon': Icons.shopping_bag, 'label': 'Lazada'},
       {'icon': Icons.play_circle_fill, 'label': 'Play Store'},
-      {'icon': Icons.eco, 'label': 'EcoPay'},
+      {
+        'icon': Icons.eco,
+        'label': 'EcoPay',
+        'isCustomIcon': true,
+        'assetPath': 'assets/images/EcoPayIcon.png',
+      },
     ];
-print('DEBUG: TouchNGoHomepage._buildAllServicesGrid - Building grid with ${services.length} services');
-    print('DEBUG: TouchNGoHomepage._buildAllServicesGrid - EcoPay is at index: ${services.indexWhere((s) => s['label'] == 'EcoPay')}');
+    print(
+      'DEBUG: TouchNGoHomepage._buildAllServicesGrid - Building grid with ${services.length} services',
+    );
+    print(
+      'DEBUG: TouchNGoHomepage._buildAllServicesGrid - EcoPay is at index: ${services.indexWhere((s) => s['label'] == 'EcoPay')}',
+    );
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -516,56 +534,67 @@ print('DEBUG: TouchNGoHomepage._buildAllServicesGrid - Building grid with ${serv
           return _buildGridServiceIcon(
             service['icon'] as IconData,
             service['label'] as String,
+            isCustom: (service['isCustomIcon'] as bool?) ?? false,
+            assetPath: service['assetPath'] as String?,
           );
         },
       ),
     );
   }
 
-  Widget _buildGridServiceIcon(IconData icon, String label) {
-return GestureDetector(
-  onTap: () {
-    print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Tapped on: $label');
-    if (label == 'EcoPay') {
-      print('DEBUG: TouchNGoHomepage._buildGridServiceIcon - Navigating to EcoPay screen');
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (context) => const EcoPayScreen(),
-        ),
-      );
-    }
-    // Add more navigation logic for other services if needed
-  },
-  child: Column(
-    children: [
-      Container(
-        width: 50,
-        height: 50,
-        decoration: BoxDecoration(
-          color: label == 'EcoPay' 
-            ? Colors.green.withOpacity(0.3) 
-            : Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon, 
-          color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
-          size: 24
-        ),
+  Widget _buildGridServiceIcon(
+    IconData? icon,
+    String label, {
+    bool isCustom = false,
+    String? assetPath,
+  }) {
+    return GestureDetector(
+      onTap: () {
+        if (label == 'EcoPay') {
+          Navigator.of(
+            context,
+          ).push(MaterialPageRoute(builder: (_) => const EcoPayScreen()));
+        }
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: label == 'EcoPay'
+                  ? Colors.green.withOpacity(0.3)
+                  : Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: isCustom && assetPath != null
+                ? Padding(
+                    padding: const EdgeInsets.all(6.0),
+                    child: Image.asset(assetPath),
+                  )
+                : Icon(
+                    icon,
+                    color: label == 'EcoPay'
+                        ? Colors.green.shade100
+                        : Colors.white,
+                    size: 24,
+                  ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white,
+              fontSize: 10,
+              fontWeight: label == 'EcoPay'
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
-      const SizedBox(height: 8),
-      Text(
-        label,
-        style: TextStyle(
-          color: label == 'EcoPay' ? Colors.green.shade100 : Colors.white, 
-          fontSize: 10,
-          fontWeight: label == 'EcoPay' ? FontWeight.bold : FontWeight.normal,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    ],
-  ),
-);
+    );
   }
 
   Widget _buildHighlightsSection() {

@@ -32,29 +32,15 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header with plant animation
             _buildHeader(),
-            
             const SizedBox(height: 20),
-            
-            // ESG Features
             _buildESGFeatures(),
-            
             const SizedBox(height: 30),
-            
-            // Carbon Footprint Tracker
             _buildCarbonTracker(),
-            
             const SizedBox(height: 30),
-            
-            // Green Rewards
             _buildGreenRewards(),
-            
             const SizedBox(height: 30),
-            
-            // Sustainability Tips
             _buildSustainabilityTips(),
-            
             const SizedBox(height: 20),
           ],
         ),
@@ -68,12 +54,9 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          colors: [Colors.green.shade100, Colors.green.shade50],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Colors.green.shade100,
-            Colors.green.shade50,
-          ],
         ),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
@@ -82,18 +65,15 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       ),
       child: Column(
         children: [
-          // Plant icon
-          Container(
-            height: 150,
-            child: Icon(
-              Icons.park,
-              size: 120,
-              color: Colors.green.shade600,
-            ),
+          // Logo
+          Image.asset(
+            'assets/images/EcoPayIconremovebg.png',
+            height: 120,
+            fit: BoxFit.contain,
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           Text(
             '🌱 Welcome to EcoPay',
             style: TextStyle(
@@ -102,9 +82,9 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               color: Colors.green.shade700,
             ),
           ),
-          
-          const SizedBox(height: 10),
-          
+
+          const SizedBox(height: 8),
+
           Text(
             'Your sustainable payment solution',
             style: TextStyle(
@@ -112,28 +92,29 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               color: Colors.green.shade600,
             ),
           ),
-          
+
+          const SizedBox(height: 8),
+
+          Text(
+            '"Every ringgit you spend, the Earth thanks you 🌍"',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontStyle: FontStyle.italic,
+              fontSize: 14,
+              color: Colors.green.shade600,
+            ),
+          ),
+
           const SizedBox(height: 20),
-          
-          // Stats cards
+
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
-                  '127kg',
-                  'CO₂ Saved',
-                  Colors.green.shade600,
-                  Icons.eco,
-                ),
+                child: _buildStatCard('127kg', 'CO₂ Saved', Colors.green.shade600, Icons.eco),
               ),
               const SizedBox(width: 15),
               Expanded(
-                child: _buildStatCard(
-                  '45',
-                  'Green Transactions',
-                  Colors.green.shade600,
-                  Icons.nature_people,
-                ),
+                child: _buildStatCard('45', 'Green Transactions', Colors.green.shade600, Icons.nature_people),
               ),
             ],
           ),
@@ -186,41 +167,15 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'ESG Features',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-          ),
-          
+          Text('ESG Features', style: _sectionTitleStyle()),
+
           const SizedBox(height: 15),
-          
-          _buildFeatureCard(
-            '🌍 Environmental Impact',
-            'Track your carbon footprint and offset emissions',
-            Colors.green.shade50,
-            Icons.public,
-          ),
-          
+
+          _buildFeatureCard('🌍 Environmental Impact', 'Track your carbon footprint and offset emissions', Colors.green.shade50, Icons.public),
           const SizedBox(height: 12),
-          
-          _buildFeatureCard(
-            '👥 Social Responsibility',
-            'Support local communities and social causes',
-            Colors.blue.shade50,
-            Icons.group,
-          ),
-          
+          _buildFeatureCard('👥 Social Responsibility', 'Support local communities and social causes', Colors.blue.shade50, Icons.group),
           const SizedBox(height: 12),
-          
-          _buildFeatureCard(
-            '🏢 Corporate Governance',
-            'Transparent and ethical business practices',
-            Colors.purple.shade50,
-            Icons.business,
-          ),
+          _buildFeatureCard('🏢 Corporate Governance', 'Transparent and ethical business practices', Colors.purple.shade50, Icons.business),
         ],
       ),
     );
@@ -249,22 +204,9 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                  ),
-                ),
+                Text(title, style: _cardTitleStyle()),
                 const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.green.shade600,
-                  ),
-                ),
+                Text(description, style: _cardDescStyle()),
               ],
             ),
           ),
@@ -278,83 +220,38 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green.shade600, Colors.green.shade400],
-        ),
+        gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade400]),
         borderRadius: BorderRadius.circular(15),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: [
-              const Icon(Icons.eco, color: Colors.white, size: 28),
-              const SizedBox(width: 12),
-              const Text(
+            children: const [
+              Icon(Icons.eco, color: Colors.white, size: 28),
+              SizedBox(width: 12),
+              Text(
                 'Carbon Footprint Tracker',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ],
           ),
-          
           const SizedBox(height: 20),
-          
           Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'This Month',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white70,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      '12.3 kg CO₂',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: const Text(
-                        '↓ 23% vs last month',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                  children: const [
+                    Text('This Month', style: TextStyle(fontSize: 14, color: Colors.white70)),
+                    SizedBox(height: 4),
+                    Text('12.3 kg CO₂', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+                    SizedBox(height: 8),
+                    Text('↓ 23% vs last month', style: TextStyle(fontSize: 12, color: Colors.white)),
                   ],
                 ),
               ),
-              
-              // Plant growing icon
-              Container(
-                width: 100,
-                height: 100,
-                child: Icon(
-                  Icons.local_florist,
-                  size: 80,
-                  color: Colors.white,
-                ),
-              ),
+              const Icon(Icons.local_florist, size: 80, color: Colors.white),
             ],
           ),
         ],
@@ -368,17 +265,8 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Green Rewards',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-          ),
-          
+          Text('Green Rewards', style: _sectionTitleStyle()),
           const SizedBox(height: 15),
-          
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -386,62 +274,52 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.green.shade200),
             ),
-            child: Row(
+            child: Column(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text(
-                    '🏆',
-                    style: TextStyle(fontSize: 24),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Eco Points Available',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade700,
-                        ),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade100,
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '1,247 points',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green.shade600,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Redeem for green products & services',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      child: const Text('🏆', style: TextStyle(fontSize: 24)),
                     ),
-                  ),
-                  child: const Text('Redeem'),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Eco Points Available', style: _cardTitleStyle()),
+                          const SizedBox(height: 4),
+                          Text('1,247 points', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green.shade600)),
+                          const SizedBox(height: 8),
+                          const Text('Redeem for green products & services', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Redeem'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                LinearProgressIndicator(
+                  value: 1247 / 1500,
+                  color: Colors.green,
+                  backgroundColor: Colors.green.shade100,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '253 points left to next reward!',
+                  style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -457,38 +335,13 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Sustainability Tips',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-          ),
-          
+          Text('Sustainability Tips', style: _sectionTitleStyle()),
           const SizedBox(height: 15),
-          
-          _buildTipCard(
-            '💡',
-            'Use digital receipts to save paper',
-            'Save up to 2.5kg CO₂ per year',
-          ),
-          
+          _buildTipCard('💡', 'Use digital receipts to save paper', 'Save up to 2.5kg CO₂ per year'),
           const SizedBox(height: 12),
-          
-          _buildTipCard(
-            '🚶‍♀️',
-            'Walk to nearby stores instead of driving',
-            'Reduce transport emissions by 65%',
-          ),
-          
+          _buildTipCard('🚶‍♀️', 'Walk to nearby stores instead of driving', 'Reduce transport emissions by 65%'),
           const SizedBox(height: 12),
-          
-          _buildTipCard(
-            '♻️',
-            'Choose eco-friendly businesses',
-            'Support sustainable practices',
-          ),
+          _buildTipCard('♻️', 'Choose eco-friendly businesses', 'Support sustainable practices'),
         ],
       ),
     );
@@ -501,47 +354,24 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
+          BoxShadow(color: Colors.green.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 3)),
         ],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              emoji,
-              style: const TextStyle(fontSize: 20),
-            ),
+            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+            child: Text(emoji, style: const TextStyle(fontSize: 20)),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
-                  ),
-                ),
+                Text(title, style: _cardTitleStyle()),
                 const SizedBox(height: 4),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.green.shade600,
-                  ),
-                ),
+                Text(description, style: _cardDescStyle()),
               ],
             ),
           ),
@@ -549,4 +379,9 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       ),
     );
   }
+
+  // Typography styles
+  TextStyle _sectionTitleStyle() => TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700);
+  TextStyle _cardTitleStyle() => TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade700);
+  TextStyle _cardDescStyle() => TextStyle(fontSize: 14, color: Colors.green.shade600);
 }
