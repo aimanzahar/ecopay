@@ -18,8 +18,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     with WidgetsBindingObserver {
   final MobileScannerController controller = MobileScannerController(
     autoStart: false,
-    detectionSpeed: DetectionSpeed.noDuplicates,
+    detectionSpeed: DetectionSpeed.normal,
     formats: [BarcodeFormat.qrCode],
+    facing: CameraFacing.back,
+    torchEnabled: false,
+    returnImage: false,
   );
 
   StreamSubscription<BarcodeCapture>? _subscription;
@@ -36,11 +39,43 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   Future<void> _checkPermissionAndStart() async {
-    final permission = await Permission.camera.request();
+    // Check current camera permission status
+    final cameraStatus = await Permission.camera.status;
 
-    if (permission == PermissionStatus.granted) {
+    if (cameraStatus == PermissionStatus.granted) {
+      await _startScanner();
+    } else if (cameraStatus == PermissionStatus.denied) {
+      // Request permission
+      final permission = await Permission.camera.request();
+
+      if (permission == PermissionStatus.granted) {
+        await _startScanner();
+      } else if (permission == PermissionStatus.permanentlyDenied) {
+        setState(() {
+          _hasPermission = false;
+          _errorMessage =
+              'Camera permission is permanently denied. Please enable it in device settings.';
+        });
+      } else {
+        setState(() {
+          _hasPermission = false;
+          _errorMessage = 'Camera permission is required to scan QR codes';
+        });
+      }
+    } else if (cameraStatus == PermissionStatus.permanentlyDenied) {
+      setState(() {
+        _hasPermission = false;
+        _errorMessage =
+            'Camera permission is permanently denied. Please enable it in device settings.';
+      });
+    }
+  }
+
+  Future<void> _startScanner() async {
+    try {
       setState(() {
         _hasPermission = true;
+        _errorMessage = null;
       });
 
       // Start listening to the barcode events
@@ -48,10 +83,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
       // Start the scanner
       await controller.start();
-    } else {
+    } catch (e) {
       setState(() {
         _hasPermission = false;
-        _errorMessage = 'Camera permission is required to scan QR codes';
+        _errorMessage = 'Failed to start camera: $e';
       });
     }
   }
@@ -65,6 +100,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     final String? code = barcodes.first.rawValue;
     if (code == null || code.isEmpty) return;
 
+    print('QR Code detected: ${code.length} characters');
+    print(
+      'QR Code content: ${code.substring(0, code.length > 200 ? 200 : code.length)}...',
+    );
+
     setState(() {
       _isProcessing = true;
     });
@@ -74,21 +114,28 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
     // Parse the QR code
     final qrData = DuitnowQrParser.parseQrData(code);
+    print('Parsed QR data: $qrData');
 
     if (qrData['isValid'] == 'true') {
+      final merchantName = qrData['merchantName'] ?? 'Unknown Merchant';
+      print('Valid QR code found, merchant: $merchantName');
+
       // Navigate to payment confirmation with parsed data
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => PaymentConfirmationScreen(
-            merchantName: qrData['merchantName'] ?? 'Unknown Merchant',
-          ),
+          builder: (context) =>
+              PaymentConfirmationScreen(merchantName: merchantName),
         ),
       );
     } else {
-      // Show error for invalid QR code
+      // Show error for invalid QR code with more detailed information
+      final errorMsg =
+          qrData['error'] ?? 'This QR code is not a valid payment code.';
+      print('Invalid QR code: $errorMsg');
+
       _showErrorDialog(
-        'Invalid QR Code',
-        'This QR code is not a valid DUITNOW payment code.',
+        'QR Code Not Supported',
+        'This appears to be a QR code, but it\'s not a supported payment format.\n\nSupported formats: DuitNow, EMVCo payment QR codes.\n\nError: $errorMsg',
       );
 
       setState(() {
@@ -113,33 +160,89 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     );
   }
 
+  void _showPermissionDialog(
+    String title,
+    String message,
+    bool isPermanentlyDenied,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          if (isPermanentlyDenied)
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                openAppSettings();
+              },
+              child: const Text('Settings'),
+            )
+          else
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Try requesting permission again
+                if (title.contains('Gallery')) {
+                  _pickImageFromGallery();
+                } else {
+                  _checkPermissionAndStart();
+                }
+              },
+              child: const Text('Allow'),
+            ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickImageFromGallery() async {
     try {
-      // Check gallery permission
-      final permission = await Permission.photos.request();
-      if (permission != PermissionStatus.granted) {
-        _showErrorDialog(
-          'Permission Required',
-          'Gallery access is needed to select QR code images.',
-        );
-        return;
+      // Check current photo permission status
+      final photoStatus = await Permission.photos.status;
+
+      PermissionStatus permission;
+      if (photoStatus == PermissionStatus.granted) {
+        permission = photoStatus;
+      } else {
+        // Request permission
+        permission = await Permission.photos.request();
       }
 
-      setState(() {
-        _isProcessing = true;
-      });
-
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 100,
-      );
-
-      if (image != null) {
-        await _analyzeImageForQR(image.path);
-      } else {
+      if (permission == PermissionStatus.granted) {
         setState(() {
-          _isProcessing = false;
+          _isProcessing = true;
         });
+
+        final XFile? image = await _imagePicker.pickImage(
+          source: ImageSource.gallery,
+          imageQuality: 100,
+        );
+
+        if (image != null) {
+          await _analyzeImageForQR(image.path);
+        } else {
+          setState(() {
+            _isProcessing = false;
+          });
+        }
+      } else if (permission == PermissionStatus.permanentlyDenied) {
+        _showPermissionDialog(
+          'Gallery Permission Required',
+          'Gallery access is permanently denied. Please enable it in device settings to select QR code images.',
+          true,
+        );
+      } else {
+        _showPermissionDialog(
+          'Gallery Permission Required',
+          'Gallery access is needed to select QR code images from your photo library.',
+          false,
+        );
       }
     } catch (e) {
       setState(() {
@@ -151,7 +254,9 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
   Future<void> _analyzeImageForQR(String imagePath) async {
     try {
+      print('Analyzing image: $imagePath');
       final bool result = await controller.analyzeImage(imagePath);
+      print('Image analysis result: $result');
 
       if (result) {
         // For mobile_scanner 3.x, analyzeImage returns bool and should trigger the normal detection flow
@@ -160,38 +265,41 @@ class _QrScannerScreenState extends State<QrScannerScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Processing image... Please wait for results.'),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 3),
           ),
         );
 
         // Reset processing flag after a delay if no barcode is detected
-        Future.delayed(const Duration(seconds: 3), () {
+        Future.delayed(const Duration(seconds: 5), () {
           if (_isProcessing) {
+            print('Image analysis timeout - no QR code detected');
             setState(() {
               _isProcessing = false;
             });
             _showErrorDialog(
               'No QR Code Found',
-              'No valid DUITNOW QR code found in the selected image.',
+              'No valid payment QR code found in the selected image.\n\nPlease ensure the image contains a clear, well-lit QR code.',
             );
           }
         });
       } else {
+        print('No QR code detected in image');
         _showErrorDialog(
           'No QR Code Found',
-          'No QR code detected in the selected image.',
+          'No QR code detected in the selected image.\n\nPlease select an image that contains a clear QR code.',
         );
         setState(() {
           _isProcessing = false;
         });
       }
     } catch (e) {
+      print('Image analysis error: $e');
       setState(() {
         _isProcessing = false;
       });
       _showErrorDialog(
         'Analysis Error',
-        'Image analysis is not supported on this device or version: $e',
+        'Failed to analyze the selected image.\n\nThis may happen if:\n• The image format is not supported\n• The image is corrupted\n• Device limitations\n\nError: $e',
       );
     }
   }
@@ -267,23 +375,89 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   Widget _buildPermissionError() {
+    final isPermanentlyDenied =
+        _errorMessage?.contains('permanently denied') ?? false;
+
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.camera_alt_outlined, size: 80, color: Colors.grey),
-            const SizedBox(height: 16),
+            Icon(Icons.camera_alt_outlined, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 24),
             Text(
-              _errorMessage ?? 'Camera permission required',
-              style: const TextStyle(fontSize: 18),
+              isPermanentlyDenied
+                  ? 'Camera Access Denied'
+                  : 'Camera Permission Required',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _checkPermissionAndStart,
-              child: const Text('Grant Permission'),
+            Text(
+              _errorMessage ?? 'Camera permission is required to scan QR codes',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            if (isPermanentlyDenied) ...[
+              ElevatedButton.icon(
+                onPressed: () => openAppSettings(),
+                icon: const Icon(Icons.settings),
+                label: const Text('Open Settings'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: _checkPermissionAndStart,
+                child: const Text('Try Again'),
+              ),
+            ] else ...[
+              ElevatedButton.icon(
+                onPressed: _checkPermissionAndStart,
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('Grant Camera Permission'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
+            Text(
+              'Alternative Option',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'You can also select a QR code image from your gallery',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _pickImageFromGallery,
+              icon: const Icon(Icons.photo_library),
+              label: const Text('Select from Gallery'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
             ),
           ],
         ),
@@ -302,42 +476,46 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   }
 
   Widget _buildOverlay() {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: ShapeDecoration(
-        shape: QrScannerOverlayShape(
-          borderColor: Theme.of(context).primaryColor,
-          borderRadius: 16,
-          borderLength: 30,
-          borderWidth: 8,
-          cutOutSize: 250,
+    return Stack(
+      children: [
+        Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: ShapeDecoration(
+            shape: QrScannerOverlayShape(
+              borderColor: Theme.of(context).primaryColor,
+              borderRadius: 16,
+              borderLength: 30,
+              borderWidth: 8,
+              cutOutSize: 250,
+            ),
+          ),
         ),
-      ),
-      child: const Positioned(
-        bottom: 100,
-        left: 0,
-        right: 0,
-        child: Column(
-          children: [
-            Text(
-              'Point your camera at a DUITNOW QR code',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+        Positioned(
+          bottom: 100,
+          left: 0,
+          right: 0,
+          child: Column(
+            children: [
+              Text(
+                'Point your camera at a DUITNOW QR code',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Or tap the gallery icon to select an image',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-          ],
+              SizedBox(height: 8),
+              Text(
+                'Or tap the gallery icon to select an image',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white70, fontSize: 14),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
