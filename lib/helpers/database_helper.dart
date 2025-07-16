@@ -270,9 +270,8 @@ class DatabaseHelper {
     final db = await database;
     await db.close();
   }
-}
 
-// User methods
+  // User methods
   Future<void> insertUser(User user) async {
     final db = await database;
     await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
@@ -303,3 +302,4 @@ class DatabaseHelper {
       whereArgs: [user.id],
     );
   }
+}
