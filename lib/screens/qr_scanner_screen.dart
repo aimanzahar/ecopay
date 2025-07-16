@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'dart:math';
 import '../helpers/database_helper.dart';
+import '../models/user.dart';
 import '../utils/duitnow_qr_parser.dart';
 import 'payment_confirmation_screen.dart';
 

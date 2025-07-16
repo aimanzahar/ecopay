@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../helpers/database_helper.dart';
 import '../models/balance.dart';
 import '../models/contribution.dart';
+import '../models/contribution.dart';
 import '../models/transaction.dart';
 import '../widgets/receipt_modal.dart';
 import 'touch_n_go_homepage.dart';
@@ -369,14 +370,15 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
       if (success) {
         if (widget.ecoPayAmount != null && widget.ecoPayAmount! > 0) {
+          print('DEBUG: PaymentConfirmation - Creating contribution record');
           final contribution = Contribution(
             userId: 1, // Assuming user ID 1
             projectId: 1, // Assuming project ID 1
             amount: widget.ecoPayAmount!,
             timestamp: DateTime.now(),
           );
-          // This method needs to be added to DatabaseHelper
-          // await _databaseHelper.insertContribution(contribution);
+          await _databaseHelper.insertContribution(contribution);
+          print('DEBUG: PaymentConfirmation - Contribution record created');
         }
         // Payment successful - show receipt modal
         await _showReceiptModal(totalAmount);

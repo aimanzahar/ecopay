@@ -5,9 +5,7 @@ import 'package:flutter/foundation.dart';
 import '../models/balance.dart';
 import '../models/transaction.dart' as AppTransaction;
 import '../models/user.dart';
-import '../models/project.dart';
 import '../models/contribution.dart';
-import '../models/achievement.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -113,31 +111,6 @@ class DatabaseHelper {
     await db.insert('balance', {
       'amount': 96.54,
       'lastUpdated': DateTime.now().toIso8601String(),
-    });
-    
-    // Insert initial projects
-    await db.insert('projects', {
-      'name': 'Langkawi Mangrove Recovery',
-      'description': '1m² mangrove protected',
-      'cost_per_unit': 2.50,
-      'unit_label': 'm²'
-    });
-    await db.insert('projects', {
-      'name': 'Sepilok Orangutan Sanctuary',
-      'description': '1 day food for orangutan',
-      'cost_per_unit': 5.00,
-      'unit_label': 'day'
-    });
-    // Insert initial achievements
-    await db.insert('achievements', {
-      'name': 'Eco Warrior',
-      'description': '100 green purchases',
-      'target': '100'
-    });
-    await db.insert('achievements', {
-      'name': 'Mangrove Guardian',
-      'description': 'RM 50 donated to mangrove projects',
-      'target': '50'
     });
   }
 
@@ -394,6 +367,7 @@ class DatabaseHelper {
       'contributions',
       where: 'user_id = ?',
       whereArgs: [userId],
+      orderBy: 'timestamp DESC',
     );
     return List.generate(maps.length, (i) {
       return Contribution.fromMap(maps[i]);
