@@ -4,6 +4,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
+import 'dart:math';
+import '../helpers/database_helper.dart';
 import '../utils/duitnow_qr_parser.dart';
 import 'payment_confirmation_screen.dart';
 
@@ -30,6 +32,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   bool _hasPermission = false;
   String? _errorMessage;
   final ImagePicker _imagePicker = ImagePicker();
+  final DatabaseHelper _databaseHelper = DatabaseHelper();
 
   @override
   void initState() {
@@ -136,13 +139,20 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       final merchantName = qrData['merchantName'] ?? 'Unknown Merchant';
       print('DEBUG: Valid QR code found, merchant: $merchantName');
 
-      // Navigate to payment confirmation with parsed data
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) =>
-              PaymentConfirmationScreen(merchantName: merchantName),
-        ),
-      );
+      // Check if user has opted in to EcoPay
+      _databaseHelper.getUser(1).then((user) {
+        if (user?.ecopayOptIn ?? false) {
+          _showEcoPayDialog(merchantName, qrData);
+        } else {
+          // Navigate to payment confirmation with parsed data
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) =>
+                  PaymentConfirmationScreen(merchantName: merchantName),
+            ),
+          );
+        }
+      });
     } else {
       // Show error for invalid QR code with more detailed information
       final errorMsg =
@@ -559,6 +569,74 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _showEcoPayDialog(String merchantName, Map<String, String> qrData) async {
+    final amount = double.tryParse(qrData['transactionAmount'] ?? '0.0') ?? 0.0;
+    
+    // Simple CO2 calculation: 1.2kg per RM 10, capped at 5kg
+    final co2Emissions = min(amount * 0.12, 5.0);
+    
+    // Dynamic round-up: round to the nearest RM 0.50 or RM 1.00
+    final double roundUp;
+    final double cents = amount - amount.floor();
+    if (cents == 0) {
+      roundUp = 0.5;
+    } else if (cents <= 0.5) {
+      roundUp = 0.5 - cents;
+    } else {
+      roundUp = 1.0 - cents;
+    }
+    final roundUpAmount = roundUp.toStringAsFixed(2);
+    final totalAmount = (amount + roundUp).toStringAsFixed(2);
+
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('🌱 EcoPay Suggestion'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Text('This meal = ${(amount * 0.14).toStringAsFixed(2)}kg CO₂ emissions'),
+                const SizedBox(height: 10),
+                Text('Round up RM $roundUpAmount to offset?'),
+                const SizedBox(height: 10),
+                const Text('🌳 Plants 0.5 trees in Taman Negara'),
+              ],
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Skip'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => PaymentConfirmationScreen(merchantName: merchantName),
+                  ),
+                );
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Round Up & Offset'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (context) => PaymentConfirmationScreen(
+                      merchantName: merchantName,
+                      ecoPayAmount: double.parse(roundUpAmount),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -114,6 +114,31 @@ class DatabaseHelper {
       'amount': 96.54,
       'lastUpdated': DateTime.now().toIso8601String(),
     });
+    
+    // Insert initial projects
+    await db.insert('projects', {
+      'name': 'Langkawi Mangrove Recovery',
+      'description': '1m² mangrove protected',
+      'cost_per_unit': 2.50,
+      'unit_label': 'm²'
+    });
+    await db.insert('projects', {
+      'name': 'Sepilok Orangutan Sanctuary',
+      'description': '1 day food for orangutan',
+      'cost_per_unit': 5.00,
+      'unit_label': 'day'
+    });
+    // Insert initial achievements
+    await db.insert('achievements', {
+      'name': 'Eco Warrior',
+      'description': '100 green purchases',
+      'target': '100'
+    });
+    await db.insert('achievements', {
+      'name': 'Mangrove Guardian',
+      'description': 'RM 50 donated to mangrove projects',
+      'target': '50'
+    });
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -355,5 +380,23 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [user.id],
     );
+  }
+
+  // Contribution methods
+  Future<void> insertContribution(Contribution contribution) async {
+    final db = await database;
+    await db.insert('contributions', contribution.toMap());
+  }
+
+  Future<List<Contribution>> getContributionsByUser(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'contributions',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+    return List.generate(maps.length, (i) {
+      return Contribution.fromMap(maps[i]);
+    });
   }
 }

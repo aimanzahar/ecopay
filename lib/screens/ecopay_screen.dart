@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../helpers/database_helper.dart';
 import '../models/user.dart';
+import '../models/contribution.dart';
+import 'achievements_screen.dart';
+import 'challenges_screen.dart';
+import 'leaderboard_screen.dart';
+import 'local_projects_screen.dart';
+import 'transaction_history_screen.dart';
 
 class EcoPayScreen extends StatefulWidget {
   const EcoPayScreen({super.key});
@@ -12,24 +18,33 @@ class EcoPayScreen extends StatefulWidget {
 class _EcoPayScreenState extends State<EcoPayScreen> {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   User? _user;
+  List<Contribution> _contributions = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUser();
+    _loadData();
   }
 
-  Future<void> _loadUser() async {
+  Future<void> _loadData() async {
     setState(() {
       _isLoading = true;
     });
     // Assuming user ID 1 for this example
     final user = await _databaseHelper.getUser(1);
-    setState(() {
-      _user = user;
-      _isLoading = false;
-    });
+    if (user != null) {
+      final contributions = await _databaseHelper.getContributionsByUser(user.id!);
+      setState(() {
+        _user = user;
+        _contributions = contributions;
+        _isLoading = false;
+      });
+    } else {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _updateOptInStatus(bool value) async {
@@ -73,32 +88,9 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
               child: Column(
                 children: [
                   _buildOptInSwitch(),
-                  if (_user?.ecopayOptIn ?? false) ...[
-                    // Header with plant animation
-                    _buildHeader(),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // ESG Features
-                    _buildESGFeatures(),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Carbon Footprint Tracker
-                    _buildCarbonTracker(),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Green Rewards
-                    _buildGreenRewards(),
-                    
-                    const SizedBox(height: 30),
-                    
-                    // Sustainability Tips
-                    _buildSustainabilityTips(),
-                    
-                    const SizedBox(height: 20),
-                  ] else
+                  if (_user?.ecopayOptIn ?? false)
+                    _buildDashboard()
+                  else
                     _buildOptInMessage(),
                 ],
               ),
@@ -643,6 +635,157 @@ Widget _buildOptInSwitch() {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDashboard() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          _buildDashboardHeader(),
+          const SizedBox(height: 20),
+          _buildImpactStats(),
+          const SizedBox(height: 20),
+          _buildDashboardCards(),
+          const SizedBox(height: 20),
+          _buildDashboardButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardHeader() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hi ${_user?.name ?? 'User'}! 👋',
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            const Text(
+              "This month's impact:",
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+        const Icon(Icons.notifications_none, size: 28),
+      ],
+    );
+  }
+
+  Widget _buildImpactStats() {
+    final double totalDonated = _contributions.fold(0.0, (sum, item) => sum + item.amount);
+    final int treesPlanted = (totalDonated / 2.5).floor(); // Assuming RM 2.5 per tree
+    final double co2Offset = totalDonated * 0.12; // Simple calculation
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.park, color: Colors.green, size: 28),
+            const SizedBox(width: 10),
+            Text('$treesPlanted trees planted', style: const TextStyle(fontSize: 18)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            const Icon(Icons.eco, color: Colors.blue, size: 28),
+            const SizedBox(width: 10),
+            Text('${co2Offset.toStringAsFixed(2)}kg CO₂ offset', style: const TextStyle(fontSize: 18)),
+          ],
+        ),
+        const SizedBox(height: 10),
+        const Row(
+          children: [
+            Icon(Icons.emoji_events, color: Colors.orange, size: 28),
+            SizedBox(width: 10),
+            Text('Rank: #847 in Selangor', style: TextStyle(fontSize: 18)),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDashboardCards() {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const TransactionHistoryScreen(),
+                ),
+              );
+            },
+            child: _buildInfoCard('Recent Activity', '📍 Mamak Ali\n+0.5 trees 🌳\n2 hours ago'),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const ChallengesScreen(),
+                ),
+              );
+            },
+            child: _buildInfoCard('Challenges', '🎯 Eco Weekend\n3/5 green meals\n2 days left'),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoCard(String title, String content) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[200],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          const Divider(),
+          Text(content),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardButtons() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const LocalProjectsScreen(),
+              ),
+            );
+          },
+          child: const Text('View Full Impact'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const LeaderboardScreen(),
+              ),
+            );
+          },
+          child: const Text('Leaderboard'),
+        ),
+      ],
     );
   }
 }
