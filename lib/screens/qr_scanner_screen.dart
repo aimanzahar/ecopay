@@ -146,12 +146,17 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           _showEcoPayDialog(merchantName, qrData);
         } else {
           // Navigate to payment confirmation with parsed data
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).push(
             MaterialPageRoute(
               builder: (context) =>
                   PaymentConfirmationScreen(merchantName: merchantName),
             ),
-          );
+          ).then((_) {
+            // Reset processing state when returning from payment
+            setState(() {
+              _isProcessing = false;
+            });
+          });
         }
       });
     } else {
@@ -614,25 +619,35 @@ class _QrScannerScreenState extends State<QrScannerScreen>
               child: const Text('Skip'),
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => PaymentConfirmationScreen(merchantName: merchantName),
                   ),
-                );
+                ).then((_) {
+                  // Reset processing state when returning from payment
+                  setState(() {
+                    _isProcessing = false;
+                  });
+                });
               },
             ),
             ElevatedButton(
               child: const Text('Round Up & Offset'),
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (context) => PaymentConfirmationScreen(
                       merchantName: merchantName,
                       ecoPayAmount: double.parse(roundUpAmount),
                     ),
                   ),
-                );
+                ).then((_) {
+                  // Reset processing state when returning from payment
+                  setState(() {
+                    _isProcessing = false;
+                  });
+                });
               },
             ),
           ],

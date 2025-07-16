@@ -25,15 +25,32 @@ class PaymentConfirmationScreen extends StatefulWidget {
 class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _ecoPayController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   
   Balance? _currentBalance;
   bool _isLoading = true;
   bool _isProcessing = false;
+  bool _enableEcoPay = false;
+  double _customEcoPayAmount = 0.0;
 
   @override
   void initState() {
     super.initState();
+    _loadBalance();
+    
+    // Initialize EcoPay settings
+    if (widget.ecoPayAmount != null && widget.ecoPayAmount! > 0) {
+      _enableEcoPay = true;
+      _customEcoPayAmount = widget.ecoPayAmount!;
+      _ecoPayController.text = widget.ecoPayAmount!.toStringAsFixed(2);
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh balance when returning from other screens
     _loadBalance();
   }
 
@@ -87,6 +104,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                         _buildBalanceCard(),
                         const SizedBox(height: 24),
                         _buildAmountInput(),
+                        const SizedBox(height: 24),
+                        _buildEcoPaySection(),
                         const SizedBox(height: 32),
                         _buildPayButton(),
                       ],
@@ -314,6 +333,124 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     );
   }
 
+  Widget _buildEcoPaySection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.eco,
+                color: Colors.green,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'EcoPay Environmental Contribution',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Help protect our environment by contributing to eco-friendly projects',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black54,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Switch(
+                value: _enableEcoPay,
+                onChanged: (value) {
+                  setState(() {
+                    _enableEcoPay = value;
+                    if (!value) {
+                      _customEcoPayAmount = 0.0;
+                      _ecoPayController.clear();
+                    } else {
+                      _customEcoPayAmount = 0.50;
+                      _ecoPayController.text = '0.50';
+                    }
+                  });
+                },
+                activeColor: Colors.green,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _enableEcoPay ? 'Enabled' : 'Disabled',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _enableEcoPay ? Colors.green : Colors.grey,
+                ),
+              ),
+            ],
+          ),
+          if (_enableEcoPay) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _ecoPayController,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+              ],
+              decoration: InputDecoration(
+                labelText: 'EcoPay Amount',
+                hintText: '0.50',
+                prefixText: 'RM ',
+                prefixStyle: const TextStyle(
+                  color: Colors.black87,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.green, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _customEcoPayAmount = double.tryParse(value) ?? 0.0;
+                });
+              },
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   Widget _buildPayButton() {
     return SizedBox(
       width: double.infinity,
@@ -360,7 +497,8 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
     try {
       final double amount = double.parse(_amountController.text);
-      final double totalAmount = amount + (widget.ecoPayAmount ?? 0);
+      final double ecoPayAmount = _enableEcoPay ? _customEcoPayAmount : 0.0;
+      final double totalAmount = amount + ecoPayAmount;
 
       // Process payment using DatabaseHelper
       final success = await _databaseHelper.processPayment(
@@ -369,12 +507,12 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
       );
 
       if (success) {
-        if (widget.ecoPayAmount != null && widget.ecoPayAmount! > 0) {
+        if (_enableEcoPay && ecoPayAmount > 0) {
           print('DEBUG: PaymentConfirmation - Creating contribution record');
           final contribution = Contribution(
             userId: 1, // Assuming user ID 1
             projectId: 1, // Assuming project ID 1
-            amount: widget.ecoPayAmount!,
+            amount: ecoPayAmount,
             timestamp: DateTime.now(),
           );
           await _databaseHelper.insertContribution(contribution);
@@ -434,7 +572,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
         barrierDismissible: false,
         builder: (context) => ReceiptModal(
           transaction: transaction,
-          ecoPayAmount: widget.ecoPayAmount,
+          ecoPayAmount: _enableEcoPay ? _customEcoPayAmount : null,
         ),
       );
       
@@ -477,6 +615,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   @override
   void dispose() {
     _amountController.dispose();
+    _ecoPayController.dispose();
     super.dispose();
   }
 }

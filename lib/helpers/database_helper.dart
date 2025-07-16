@@ -373,4 +373,168 @@ class DatabaseHelper {
       return Contribution.fromMap(maps[i]);
     });
   }
+
+  // Enhanced method to get contributions with project details
+  Future<List<Map<String, dynamic>>> getContributionsWithProjectDetails(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT
+        c.id as contribution_id,
+        c.user_id,
+        c.project_id,
+        c.amount,
+        c.transaction_id,
+        c.timestamp,
+        p.name as project_name,
+        p.description as project_description,
+        p.cost_per_unit,
+        p.unit_label
+      FROM contributions c
+      LEFT JOIN projects p ON c.project_id = p.id
+      WHERE c.user_id = ?
+      ORDER BY c.timestamp DESC
+    ''', [userId]);
+    return maps;
+  }
+
+  // Get contribution statistics for a user
+  Future<Map<String, dynamic>> getContributionStatistics(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.rawQuery('''
+      SELECT
+        COUNT(*) as total_contributions,
+        SUM(amount) as total_donated,
+        COUNT(DISTINCT project_id) as projects_supported,
+        MIN(timestamp) as first_contribution,
+        MAX(timestamp) as latest_contribution
+      FROM contributions
+      WHERE user_id = ?
+    ''', [userId]);
+    
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return {
+      'total_contributions': 0,
+      'total_donated': 0.0,
+      'projects_supported': 0,
+      'first_contribution': null,
+      'latest_contribution': null,
+    };
+  }
+
+  // Get monthly contribution data for charts
+  Future<List<Map<String, dynamic>>> getMonthlyContributions(int userId) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT
+        strftime('%Y-%m', timestamp) as month,
+        COUNT(*) as contribution_count,
+        SUM(amount) as total_amount
+      FROM contributions
+      WHERE user_id = ?
+      GROUP BY strftime('%Y-%m', timestamp)
+      ORDER BY month DESC
+      LIMIT 12
+    ''', [userId]);
+    return maps;
+  }
+
+  // Insert sample project data for testing
+  Future<void> insertSampleProjects() async {
+    final db = await database;
+    
+    // Check if projects already exist
+    final existing = await db.query('projects', limit: 1);
+    if (existing.isNotEmpty) return;
+    
+    final sampleProjects = [
+      {
+        'name': 'Mangrove Restoration',
+        'description': 'Plant mangrove trees in coastal areas to prevent erosion and support marine life',
+        'cost_per_unit': 5.0,
+        'unit_label': 'tree'
+      },
+      {
+        'name': 'Solar Panel Installation',
+        'description': 'Install solar panels in rural schools to provide clean energy',
+        'cost_per_unit': 25.0,
+        'unit_label': 'watt'
+      },
+      {
+        'name': 'Clean Water Wells',
+        'description': 'Build water filtration systems for rural communities',
+        'cost_per_unit': 100.0,
+        'unit_label': 'system'
+      },
+      {
+        'name': 'Rainforest Conservation',
+        'description': 'Protect endangered rainforest areas and wildlife habitats',
+        'cost_per_unit': 10.0,
+        'unit_label': 'sq meter'
+      },
+      {
+        'name': 'Ocean Cleanup',
+        'description': 'Remove plastic waste from oceans and coastal areas',
+        'cost_per_unit': 15.0,
+        'unit_label': 'kg waste'
+      }
+    ];
+    
+    for (final project in sampleProjects) {
+      await db.insert('projects', project);
+    }
+  }
+
+  // Insert sample contribution data for testing
+  Future<void> insertSampleContributions(int userId) async {
+    final db = await database;
+    
+    // Check if contributions already exist
+    final existing = await db.query('contributions', where: 'user_id = ?', whereArgs: [userId], limit: 1);
+    if (existing.isNotEmpty) return;
+    
+    final now = DateTime.now();
+    final sampleContributions = [
+      {
+        'user_id': userId,
+        'project_id': 1,
+        'amount': 15.50,
+        'transaction_id': 'TXN001',
+        'timestamp': now.subtract(const Duration(days: 5)).toIso8601String(),
+      },
+      {
+        'user_id': userId,
+        'project_id': 2,
+        'amount': 8.75,
+        'transaction_id': 'TXN002',
+        'timestamp': now.subtract(const Duration(days: 12)).toIso8601String(),
+      },
+      {
+        'user_id': userId,
+        'project_id': 3,
+        'amount': 22.30,
+        'transaction_id': 'TXN003',
+        'timestamp': now.subtract(const Duration(days: 18)).toIso8601String(),
+      },
+      {
+        'user_id': userId,
+        'project_id': 1,
+        'amount': 12.00,
+        'transaction_id': 'TXN004',
+        'timestamp': now.subtract(const Duration(days: 25)).toIso8601String(),
+      },
+      {
+        'user_id': userId,
+        'project_id': 4,
+        'amount': 18.90,
+        'transaction_id': 'TXN005',
+        'timestamp': now.subtract(const Duration(days: 30)).toIso8601String(),
+      },
+    ];
+    
+    for (final contribution in sampleContributions) {
+      await db.insert('contributions', contribution);
+    }
+  }
 }

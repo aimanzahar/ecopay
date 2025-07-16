@@ -7,6 +7,7 @@ import 'challenges_screen.dart';
 import 'leaderboard_screen.dart';
 import 'local_projects_screen.dart';
 import 'transaction_history_screen.dart';
+import 'donation_history_screen.dart';
 
 class EcoPayScreen extends StatefulWidget {
   const EcoPayScreen({super.key});
@@ -24,6 +25,13 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
   @override
   void initState() {
     super.initState();
+    _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data when returning from other screens
     _loadData();
   }
 
@@ -174,6 +182,26 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
                 child: _buildStatCard('${_contributions.length}', 'Green Transactions', Colors.green.shade600, Icons.nature_people),
               ),
             ],
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const DonationHistoryScreen(),
+                ),
+              );
+            },
+            icon: const Icon(Icons.history, color: Colors.white),
+            label: const Text('View Contribution History', style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green.shade600,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
           ),
         ],
       ),
