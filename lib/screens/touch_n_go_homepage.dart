@@ -4,6 +4,7 @@ import 'dart:math';
 import '../helpers/database_helper.dart';
 import '../models/balance.dart';
 import 'qr_scanner_screen.dart';
+import 'ecopay_screen.dart';
 
 class TouchNGoHomepage extends StatefulWidget {
   const TouchNGoHomepage({super.key});
@@ -20,16 +21,27 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
   @override
   void initState() {
     super.initState();
+    print('DEBUG: TouchNGoHomepage - initState called');
+    _loadBalance();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print('DEBUG: TouchNGoHomepage - didChangeDependencies called');
+    // Refresh balance when returning from other screens
     _loadBalance();
   }
 
   Future<void> _loadBalance() async {
+    print('DEBUG: TouchNGoHomepage._loadBalance - Starting to load balance');
     setState(() {
       _isLoading = true;
     });
 
     try {
       final balance = await _databaseHelper.getBalance();
+      print('DEBUG: TouchNGoHomepage._loadBalance - Loaded balance: ${balance.amount}');
       setState(() {
         _currentBalance = balance;
         _isLoading = false;
@@ -477,7 +489,7 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       {'icon': Icons.games, 'label': 'Goama Games'},
       {'icon': Icons.shopping_bag, 'label': 'Lazada'},
       {'icon': Icons.play_circle_fill, 'label': 'Play Store'},
-      {'icon': Icons.more_horiz, 'label': 'More'},
+      {'icon': Icons.eco, 'label': 'EcoPay'},
     ];
 
     return Container(
@@ -509,24 +521,36 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
   }
 
   Widget _buildGridServiceIcon(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () {
+        if (label == 'EcoPay') {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const EcoPayScreen(),
+            ),
+          );
+        }
+        // Add more navigation logic for other services if needed
+      },
+      child: Column(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
           ),
-          child: Icon(icon, color: Colors.white, size: 24),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white, fontSize: 10),
-          textAlign: TextAlign.center,
-        ),
-      ],
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 10),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 

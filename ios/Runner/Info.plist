@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Camera permission for QR code scanning -->
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to scan QR codes for payments</string>
+	<!-- Photo library permission for selecting QR images -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to select QR code images for scanning</string>
 </dict>
 </plist>

@@ -4,6 +4,7 @@ import '../helpers/database_helper.dart';
 import '../models/balance.dart';
 import '../models/transaction.dart';
 import '../widgets/receipt_modal.dart';
+import 'touch_n_go_homepage.dart';
 
 class PaymentConfirmationScreen extends StatefulWidget {
   final String merchantName;
@@ -379,15 +380,27 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   }
 
   Future<void> _showReceiptModal(double amount) async {
+    print('DEBUG: PaymentConfirmation - _showReceiptModal called with amount: $amount');
+    
     // Get the latest balance after payment
     final updatedBalance = await _databaseHelper.getBalance();
+    print('DEBUG: PaymentConfirmation - Updated balance after payment: ${updatedBalance.amount}');
     
-    // Generate transaction ID (should match the one created in processPayment)
-    final transactionId = Transaction.generateTransactionId();
+    // Get the latest transaction from database to ensure correct transaction ID
+    final transactions = await _databaseHelper.getTransactions();
+    Transaction? latestTransaction;
     
-    // Create transaction object for the receipt
-    final transaction = Transaction(
-      transactionId: transactionId,
+    if (transactions.isNotEmpty) {
+      // Find the most recent transaction that matches our merchant and amount
+      latestTransaction = transactions.firstWhere(
+        (t) => t.merchantName == widget.merchantName && t.amount == amount,
+        orElse: () => transactions.first,
+      );
+    }
+    
+    // Fallback: Create transaction object if not found (shouldn't happen normally)
+    final transaction = latestTransaction ?? Transaction(
+      transactionId: Transaction.generateTransactionId(),
       merchantName: widget.merchantName,
       amount: amount,
       remainingBalance: updatedBalance.amount,
@@ -396,14 +409,37 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
     );
 
     if (mounted) {
+      print('DEBUG: PaymentConfirmation - About to show receipt dialog');
+      
+      // Show the receipt modal and wait for it to close
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => ReceiptModal(transaction: transaction),
       );
       
-      // Navigate back to home after showing receipt
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      print('DEBUG: PaymentConfirmation - Receipt dialog closed');
+      
+      // Navigate back to home after dialog is closed (from main screen context)
+      if (mounted) {
+        print('DEBUG: PaymentConfirmation - Starting navigation to home page');
+        print('DEBUG: PaymentConfirmation - Current context is mounted: $mounted');
+        
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) {
+            print('DEBUG: PaymentConfirmation - MaterialPageRoute builder called');
+            return const TouchNGoHomepage();
+          }),
+          (route) {
+            print('DEBUG: PaymentConfirmation - Route predicate called for route: ${route.runtimeType}');
+            return false;
+          },
+        );
+        
+        print('DEBUG: PaymentConfirmation - Navigation completed');
+      } else {
+        print('DEBUG: PaymentConfirmation - Widget not mounted, skipping navigation');
+      }
     }
   }
 
