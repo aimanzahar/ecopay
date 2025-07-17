@@ -485,36 +485,37 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
     );
   }
 
-  Widget _buildOptInMessage() {
-    return Container(
-      padding: const EdgeInsets.all(40),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.eco,
-            size: 100,
-            color: Colors.green.withOpacity(0.7),
+Widget _buildOptInMessage() {
+  return Container(
+    padding: const EdgeInsets.all(40),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Image.asset(
+          'assets/images/EcoPayIconremovebg.png',
+          height: 100,
+          fit: BoxFit.contain,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Join EcoPay!',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Join EcoPay!',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Enable EcoPay to round up your transactions and contribute to environmental projects.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          'Enable EcoPay to round up your transactions and contribute to environmental projects.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  );
+}
+
 
   TextStyle _sectionTitleStyle() => TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700);
   TextStyle _cardTitleStyle() => TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade700);

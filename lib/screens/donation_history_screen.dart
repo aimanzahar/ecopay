@@ -203,7 +203,7 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
                 child: _buildStatItem(
                   'RM${totalDonated.toStringAsFixed(2)}',
                   'Total Donated',
-                  Icons.attach_money,
+                  Icons.account_balance_wallet,
                 ),
               ),
               Expanded(
