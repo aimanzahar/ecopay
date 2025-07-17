@@ -87,15 +87,50 @@ flowchart TD
 
 ---
 
-## 📱 Screenshots (Coming Soon)
-
-- [ ] Home screen with tree progress  
-- [ ] Checkout with carbon label  
-- [ ] Leaderboard of green spenders  
-- [ ] Round-up donation UI  
-- [ ] EcoBot assistant
+## 📱 Screenshots
 
 ---
+
+### 🧭 EcoPay Integration
+<p float="left">
+  <img src="assets/readme_img/Touchngo.png" width="300" alt="Touch ‘n Go Integration Preview"/>
+</p>
+
+
+---
+
+### 🔷 Dashboard Views
+<p float="left">
+  <img src="assets/readme_img/dashboard1.png" width="300" alt="Dashboard View 1"/>
+  <img src="assets/readme_img/dashboard2.png" width="300" alt="Dashboard View 2"/>
+</p>
+
+---
+
+### 🔍 QR Scan Flow
+<p float="left">
+  <img src="assets/readme_img/scan_qr.png" width="300" alt="Scan QR"/>
+  <img src="assets/readme_img/after_scan_qr.png" width="300" alt="Post Scan"/>
+  <img src="assets/readme_img/info_qr.png" width="300" alt="QR Info"/>
+  <img src="assets/readme_img/info_qr_2.png" width="300" alt="QR Info 2"/>
+  
+</p>
+
+---
+
+### ✅ Confirmation & Success
+<p float="left">
+  <img src="assets/readme_img/success.png" width="300" alt="Success Screen"/>
+</p>
+
+---
+
+### 🕓 Transaction History
+<p float="left">
+  <img src="assets/readme_img/history.png" width="300" alt="History Screen"/>
+</p>
+
+
 
 ## 🛠️ Getting Started
 

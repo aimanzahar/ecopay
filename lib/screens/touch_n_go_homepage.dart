@@ -245,13 +245,23 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                             fontWeight: FontWeight.bold,
                           ),
                         )
-                      : Text(
-                          'RM ${_currentBalance?.amount.toStringAsFixed(2) ?? '0.00'}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      : Row(
+                          children: [
+                            Image.asset(
+                              'assets/images/malaysia-flag.png',
+                              width: 28,
+                              height: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'RM ${_currentBalance?.amount.toStringAsFixed(2) ?? '0.00'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
                 ],
               ),
@@ -262,7 +272,13 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(25),
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 30),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(25),
+                  child: Image.asset(
+                    'assets/images/profile.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ],
           ),
