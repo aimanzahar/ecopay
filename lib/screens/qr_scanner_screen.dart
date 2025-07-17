@@ -34,6 +34,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   String? _errorMessage;
   final ImagePicker _imagePicker = ImagePicker();
   final DatabaseHelper _databaseHelper = DatabaseHelper();
+  Timer? _timeoutTimer;
 
   @override
   void initState() {
@@ -103,6 +104,8 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       print('DEBUG: Already processing, returning');
       return;
     }
+
+    _timeoutTimer?.cancel(); // Cancel the timeout if a barcode is detected
 
     final List<Barcode> barcodes = capture.barcodes;
     print('DEBUG: Number of barcodes detected: ${barcodes.length}');
@@ -287,48 +290,53 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   Future<void> _analyzeImageForQR(String imagePath) async {
     try {
       print('DEBUG: Starting image analysis for: $imagePath');
-      print('DEBUG: Processing flag: $_isProcessing');
+      print('DEBUG: Pre-analysis processing flag: $_isProcessing');
       print('DEBUG: Subscription active: ${_subscription != null}');
       
-      final bool result = await controller.analyzeImage(imagePath);
-      print('DEBUG: Image analysis result: $result');
+      try {
+        final bool result = await controller.analyzeImage(imagePath);
+        print('DEBUG: Image analysis result: $result');
 
-      if (result) {
-        print('DEBUG: Image analysis returned true - QR code detected');
-        // For mobile_scanner 3.x, analyzeImage returns bool and should trigger the normal detection flow
-        // The actual barcode data will be processed through the _handleBarcode method
-        // Show a message to indicate processing
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Processing image... Please wait for results.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
+        if (result) {
+          print('DEBUG: Image analysis returned true - QR code detected');
+          // For mobile_scanner 3.x, analyzeImage returns bool and should trigger the normal detection flow
+          // The actual barcode data will be processed through the _handleBarcode method
+          // Show a message to indicate processing
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Processing image... Please wait for results.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
 
-        // Reset processing flag after a delay if no barcode is detected
-        Timer? timeoutTimer;
-        timeoutTimer = Timer(const Duration(seconds: 5), () {
-          print('DEBUG: Image analysis timeout check - mounted: $mounted, processing: $_isProcessing');
-          if (_isProcessing && mounted) {
-            print('DEBUG: Image analysis timeout - no QR code callback received');
-            setState(() {
-              _isProcessing = false;
-            });
-            _showErrorDialog(
-              'No QR Code Found',
-              'No valid payment QR code found in the selected image.\n\nPlease ensure the image contains a clear, well-lit QR code.',
-            );
-          } else if (!mounted) {
-            print('DEBUG: Widget disposed before timeout callback - avoiding setState');
-          }
-          timeoutTimer?.cancel();
-        });
-      } else {
-        print('DEBUG: Image analysis returned false - no QR code detected');
-        _showErrorDialog(
-          'No QR Code Found',
-          'No QR code detected in the selected image.\n\nPlease select an image that contains a clear QR code.',
-        );
+          // Reset processing flag after a delay if no barcode is detected
+          _timeoutTimer?.cancel();
+          _timeoutTimer = Timer(const Duration(seconds: 5), () {
+            print('DEBUG: Image analysis timeout check - mounted: $mounted, processing: $_isProcessing');
+            if (_isProcessing && mounted) {
+              print('DEBUG: Image analysis timeout - no QR code callback received');
+              setState(() {
+                _isProcessing = false;
+              });
+              _showErrorDialog(
+                'No QR Code Found',
+                'No valid payment QR code found in the selected image.\n\nPlease ensure the image contains a clear, well-lit QR code.',
+              );
+            } else if (!mounted) {
+              print('DEBUG: Widget disposed before timeout callback - avoiding setState');
+            }
+          });
+        } else {
+          print('DEBUG: Image analysis returned false - no QR code detected');
+          _showErrorDialog(
+            'No QR Code Found',
+            'No QR code detected in the selected image.\n\nPlease select an image that contains a clear QR code.',
+          );
+        }
+      } catch (e, s) {
+        print('CRITICAL: Error during analyzeImage: $e');
+        print('CRITICAL: Stacktrace: $s');
+        _showErrorDialog('Analysis Critical Error', 'An unexpected error occurred during image analysis. $e');
       }
     } catch (e) {
       print('DEBUG: Image analysis error: $e');
@@ -369,6 +377,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     WidgetsBinding.instance.removeObserver(this);
     _subscription?.cancel();
     _subscription = null;
+    _timeoutTimer?.cancel();
     controller.dispose();
     super.dispose();
   }
