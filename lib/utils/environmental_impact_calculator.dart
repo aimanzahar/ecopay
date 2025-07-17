@@ -2,10 +2,19 @@ class EnvironmentalImpactCalculator {
   // CO2 offset rate: 0.12kg per RM donated (based on existing app pattern)
   static const double co2OffsetPerRM = 0.12;
   
-  // Additional environmental impact metrics
+  // Additional environmental impact metrics (at least 10 types)
   static const double waterSavedLitersPerRM = 5.0;
   static const double treeEquivalentPerRM = 0.02;
   static const double energySavedKwhPerRM = 0.8;
+  static const double plasticBottlesReducedPerRM = 0.3;
+  static const double riverMetersCleanedPerRM = 0.15;
+  static const double wildlifeProtectedPerRM = 0.05;
+  static const double airQualityImprovedM3PerRM = 8.0;
+  static const double soilRestoredM2PerRM = 0.4;
+  static const double solarPanelsEquivalentPerRM = 0.001;
+  static const double carbonFootprintReducedPerRM = 0.18;
+  static const double biodiversityProtectedPerRM = 0.08;
+  static const double wasteDivertedKgPerRM = 0.6;
   
   /// Calculate CO2 offset for a contribution amount
   static double calculateCO2Offset(double amount) {
@@ -27,6 +36,51 @@ class EnvironmentalImpactCalculator {
     return amount * energySavedKwhPerRM;
   }
   
+  /// Calculate plastic bottles reduced for a contribution amount
+  static double calculatePlasticBottlesReduced(double amount) {
+    return amount * plasticBottlesReducedPerRM;
+  }
+  
+  /// Calculate river meters cleaned for a contribution amount
+  static double calculateRiverCleaned(double amount) {
+    return amount * riverMetersCleanedPerRM;
+  }
+  
+  /// Calculate wildlife protected for a contribution amount
+  static double calculateWildlifeProtected(double amount) {
+    return amount * wildlifeProtectedPerRM;
+  }
+  
+  /// Calculate air quality improved in m³ for a contribution amount
+  static double calculateAirQualityImproved(double amount) {
+    return amount * airQualityImprovedM3PerRM;
+  }
+  
+  /// Calculate soil restored in m² for a contribution amount
+  static double calculateSoilRestored(double amount) {
+    return amount * soilRestoredM2PerRM;
+  }
+  
+  /// Calculate solar panels equivalent for a contribution amount
+  static double calculateSolarPanelsEquivalent(double amount) {
+    return amount * solarPanelsEquivalentPerRM;
+  }
+  
+  /// Calculate carbon footprint reduced for a contribution amount
+  static double calculateCarbonFootprintReduced(double amount) {
+    return amount * carbonFootprintReducedPerRM;
+  }
+  
+  /// Calculate biodiversity protected for a contribution amount
+  static double calculateBiodiversityProtected(double amount) {
+    return amount * biodiversityProtectedPerRM;
+  }
+  
+  /// Calculate waste diverted in kg for a contribution amount
+  static double calculateWasteDiverted(double amount) {
+    return amount * wasteDivertedKgPerRM;
+  }
+  
   /// Get comprehensive environmental impact metrics
   static Map<String, dynamic> getEnvironmentalImpact(double amount) {
     return {
@@ -34,6 +88,15 @@ class EnvironmentalImpactCalculator {
       'water_saved_liters': calculateWaterSaved(amount),
       'tree_equivalent': calculateTreeEquivalent(amount),
       'energy_saved_kwh': calculateEnergySaved(amount),
+      'plastic_bottles_reduced': calculatePlasticBottlesReduced(amount),
+      'river_meters_cleaned': calculateRiverCleaned(amount),
+      'wildlife_protected': calculateWildlifeProtected(amount),
+      'air_quality_improved_m3': calculateAirQualityImproved(amount),
+      'soil_restored_m2': calculateSoilRestored(amount),
+      'solar_panels_equivalent': calculateSolarPanelsEquivalent(amount),
+      'carbon_footprint_reduced': calculateCarbonFootprintReduced(amount),
+      'biodiversity_protected': calculateBiodiversityProtected(amount),
+      'waste_diverted_kg': calculateWasteDiverted(amount),
       'amount': amount,
     };
   }
@@ -47,12 +110,21 @@ class EnvironmentalImpactCalculator {
         'total_water_saved_liters': 0.0,
         'total_tree_equivalent': 0.0,
         'total_energy_saved_kwh': 0.0,
+        'total_plastic_bottles_reduced': 0.0,
+        'total_river_meters_cleaned': 0.0,
+        'total_wildlife_protected': 0.0,
+        'total_air_quality_improved_m3': 0.0,
+        'total_soil_restored_m2': 0.0,
+        'total_solar_panels_equivalent': 0.0,
+        'total_carbon_footprint_reduced': 0.0,
+        'total_biodiversity_protected': 0.0,
+        'total_waste_diverted_kg': 0.0,
         'contribution_count': 0,
       };
     }
     
     final totalAmount = contributions.fold<double>(
-      0.0, 
+      0.0,
       (sum, contribution) => sum + (contribution['amount'] as double? ?? 0.0)
     );
     
@@ -62,6 +134,15 @@ class EnvironmentalImpactCalculator {
       'total_water_saved_liters': calculateWaterSaved(totalAmount),
       'total_tree_equivalent': calculateTreeEquivalent(totalAmount),
       'total_energy_saved_kwh': calculateEnergySaved(totalAmount),
+      'total_plastic_bottles_reduced': calculatePlasticBottlesReduced(totalAmount),
+      'total_river_meters_cleaned': calculateRiverCleaned(totalAmount),
+      'total_wildlife_protected': calculateWildlifeProtected(totalAmount),
+      'total_air_quality_improved_m3': calculateAirQualityImproved(totalAmount),
+      'total_soil_restored_m2': calculateSoilRestored(totalAmount),
+      'total_solar_panels_equivalent': calculateSolarPanelsEquivalent(totalAmount),
+      'total_carbon_footprint_reduced': calculateCarbonFootprintReduced(totalAmount),
+      'total_biodiversity_protected': calculateBiodiversityProtected(totalAmount),
+      'total_waste_diverted_kg': calculateWasteDiverted(totalAmount),
       'contribution_count': contributions.length,
     };
   }
@@ -100,6 +181,71 @@ class EnvironmentalImpactCalculator {
       return '${energy.toStringAsFixed(1)} kWh';
     } else {
       return '${(energy * 1000).toStringAsFixed(0)}Wh';
+    }
+  }
+  
+  static String formatPlasticBottlesImpact(double amount) {
+    final bottles = calculatePlasticBottlesReduced(amount);
+    return '${bottles.toStringAsFixed(1)} bottles';
+  }
+  
+  static String formatRiverCleanedImpact(double amount) {
+    final meters = calculateRiverCleaned(amount);
+    if (meters >= 1000) {
+      return '${(meters / 1000).toStringAsFixed(1)}km';
+    } else {
+      return '${meters.toStringAsFixed(1)}m';
+    }
+  }
+  
+  static String formatWildlifeProtectedImpact(double amount) {
+    final animals = calculateWildlifeProtected(amount);
+    return '${animals.toStringAsFixed(2)} animals';
+  }
+  
+  static String formatAirQualityImpact(double amount) {
+    final airM3 = calculateAirQualityImproved(amount);
+    return '${airM3.toStringAsFixed(1)}m³ air';
+  }
+  
+  static String formatSoilRestoredImpact(double amount) {
+    final soilM2 = calculateSoilRestored(amount);
+    if (soilM2 >= 10000) {
+      return '${(soilM2 / 10000).toStringAsFixed(1)} hectares';
+    } else {
+      return '${soilM2.toStringAsFixed(1)}m²';
+    }
+  }
+  
+  static String formatSolarPanelsImpact(double amount) {
+    final panels = calculateSolarPanelsEquivalent(amount);
+    if (panels >= 1.0) {
+      return '${panels.toStringAsFixed(1)} panels';
+    } else {
+      return '${(panels * 100).toStringAsFixed(1)}% panel';
+    }
+  }
+  
+  static String formatCarbonFootprintImpact(double amount) {
+    final carbon = calculateCarbonFootprintReduced(amount);
+    if (carbon >= 1.0) {
+      return '${carbon.toStringAsFixed(1)}kg footprint';
+    } else {
+      return '${(carbon * 1000).toStringAsFixed(0)}g footprint';
+    }
+  }
+  
+  static String formatBiodiversityImpact(double amount) {
+    final bio = calculateBiodiversityProtected(amount);
+    return '${bio.toStringAsFixed(2)} species';
+  }
+  
+  static String formatWasteDivertedImpact(double amount) {
+    final waste = calculateWasteDiverted(amount);
+    if (waste >= 1000) {
+      return '${(waste / 1000).toStringAsFixed(1)} tonnes';
+    } else {
+      return '${waste.toStringAsFixed(1)}kg';
     }
   }
   
