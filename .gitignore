@@ -12,6 +12,8 @@
 .swiftpm/
 migrate_working_dir/
 **/build/
+.env
+venv/
 
 
 # IntelliJ related

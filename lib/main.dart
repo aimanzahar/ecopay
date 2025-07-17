@@ -1,7 +1,9 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/material.dart';
 import 'screens/touch_n_go_homepage.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(); // Load your .env file before app starts
   runApp(const MyApp());
 }
 
