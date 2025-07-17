@@ -14,45 +14,96 @@ This project was developed for **PayHack25 – Challenge 3: ESG/Sustainability**
 
 > _How can digital payments be leveraged to seamlessly integrate environmental sustainability and social impact into daily transactions?_
 
----
-
-## 💡 What is EcoPay?
-
-EcoPay is a Flutter-based module that integrates seamlessly into existing digital wallets. It empowers users to:
-
-- 📉 **See their carbon impact** in real-time per purchase
-- 🥕 **Make greener spending choices** with nudges (e.g., Chicken > Beef)
-- 🎮 **Get rewarded** through badges, tree-growth, and streaks
-- 💸 **Donate easily** via round-up donations to verified causes
-- 🤖 **Chat with EcoBot**, an AI assistant for sustainability support
+Our solution is EcoPay, a feature designed to integrate seamlessly into existing e-wallet platforms like TnG eWallet, aimed at making sustainability part of daily spending habits. Our focus is on Gen Z consumers in Malaysia. They are tech-savvy, socially aware, and already active users of digital wallets. They care about the environment but don’t always know how to help. EcoPay empowers them to make better choices through the payment experience they already use.
 
 ---
 
-## 🎯 Why Gen Z?
+## The Problem
 
-- 71% of Malaysian Gen Z use digital wallets
-- 66% are willing to pay more for sustainable products
-- But 78% feel powerless without tools to take action
+Today, ESG efforts are mostly limited to corporations and investors. Regular consumers are left out, even though they are part of the impact chain. There is no easy or engaging way for users to:
+- Understand their carbon footprint
+- Make greener spending choices
+- Contribute to social or environmental causes through payments
 
-EcoPay bridges that gap—helping Gen Z act on their values, daily.
+Despite the rise of e-wallets and DuitNow QR in Malaysia, these platforms do not currently promote sustainability in a meaningful way.
 
 ---
 
-## 🚀 Features
+## 💡 EcoPay: What It Does
 
-| Feature | Description |
-|---|---|
-| 💨 **Carbon Estimator** | Estimates CO₂ per transaction via local calculations. |
+EcoPay is designed as a plug-in or native feature inside existing e-wallet apps. It educates, nudges, and rewards users for making greener and more socially responsible spending decisions.
+
+### Core Features:
+- **Greener Options**: Show users better choices during checkout (e.g., Chicken > Beef, MRT > Ride-share).
+- **Impact Display**: Example: "This meal produced 4.5kg CO₂" or "You saved 1.8kg CO₂ by buying local."
+- **Gamification**: Sync with friends to see top 10 green spenders and earn rewards like cashback or badges.
+- **Motivation & Progress**: A virtual tree graphic grows with your positive impact, and a monthly dashboard shows CO₂ saved, donations, etc.
+- **Inclusive Design**: Multilanguage support (English, BM, Mandarin), simple icons for low-literacy users, and a low-data mode for rural areas.
+- **Round-Up Donations**: Round up to the nearest RM and donate the difference to verified causes.
+- **AI Chatbot Assistant**: Replaces the FAQ and helps users navigate features easily.
+
+---
+
+## 🚀 Features Summary
+
+| Feature                 | Description                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------ |
+| 💨 **Carbon Estimator** | Estimates CO₂ per transaction via local calculations.                          |
 | 🎁 **Rewards & Gamification** | Includes leaderboards, achievements, and challenges to reward sustainable behavior. |
-| 🪙 **Round-Up Donations** | Donates spare change to verified NGOs via TnG. |
-| 📊 **Impact Dashboard** | View monthly CO₂ saved, donations made, and progress. |
-| 🌏 **Local Project Support** | Enables users to support local environmental projects in Malaysia. |
-| 📱 **QR Code Payments** | Supports DuitNow QR payments with an integrated scanner. |
+| 🪙 **Round-Up Donations**   | Donates spare change to verified NGOs via TnG.                                 |
+| 📊 **Impact Dashboard**    | View monthly CO₂ saved, donations made, and progress.                          |
+| 🌏 **Local Project Support**| Enables users to support local environmental projects in Malaysia.             |
+| 📱 **QR Code Payments**   | Supports DuitNow QR payments with an integrated scanner.                         |
+
+---
+
+## Why This Matters for Malaysia
+
+- Most Malaysians are unaware of how daily purchases affect the environment.
+- ESG remains siloed within big business and finance.
+- Climate risks like floods and pollution are rising.
+- Digital payments are growing rapidly but not leveraged for social or climate impact.
+
+EcoPay turns spending into action.
+
+---
+
+## 🎯 Target Audience: Why Gen Z?
+
+- **High e-wallet usage**: 71% of Malaysian Gen Z use digital wallets.
+- **Strong climate concern**: 71% report experiencing climate anxiety.
+- **Social media-driven**: Fast adoption and peer influence are key to their habits.
+- **Willing to pay more for eco-products**: 66% are open to a premium for sustainable goods.
+- **Tech-savvy & early adopters**: The perfect group to scale awareness and drive change.
+
+---
+
+## ✨ Positive Outcomes
+
+### For Consumers:
+- Everyday people can now contribute to sustainability.
+- Greater awareness of their carbon footprint and spending habits.
+- An easy, rewarding experience that builds good habits.
+
+### For Malaysia:
+- Boosts public involvement in national sustainability goals.
+- Local data and behavior insights can inform policy.
+- Positions Malaysia as an ESG leader in the ASEAN region.
+
+---
+
+## 💼 Impact for Investors
+
+- **ESG now affects returns**: It’s a smart financial move, not just a moral one.
+- **Demand for real data**: We offer measurable CO₂, donation, and behavior metrics.
+- **Aligned with national policies**: Fits Bank Negara, SRI taxonomy, and ESG mandates.
+- **Green finance is growing**: Our app fits green sukuk and ESG fund goals.
+- **Scalable ESG enabler**: One product can impact millions through a single e-wallet.
+- **Reduces greenwashing risk**: Transparent calculations and trusted sources build confidence.
 
 ---
 
 ## 🧠 Architecture
-
 ```mermaid
 graph TD
     subgraph A["📱 User Device"]
@@ -103,7 +154,6 @@ graph TD
         D5 --> F3["Push Notification Service"];
     end
 ```
-
 ---
 
 ## 🔩 Modules Overview
@@ -267,6 +317,13 @@ flutter run
 ## 📄 License
 
 This project is licensed under the MIT License.
+
+---
+
+## Conclusion
+
+EcoPay makes sustainable living part of everyday digital life. By embedding impact into payments, we empower a new generation to take meaningful climate and social action — one transaction at a time.
+We believe this is how Malaysia can lead in green fintech for the region.
 
 ---
 
