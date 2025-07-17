@@ -326,11 +326,58 @@ flutter run
 
 ## 🧪 Future Plans
 
-- [ ] Support multiple wallets (Boost, GrabPay, MAE)
-- [ ] Real-time emissions using location and merchant category
-- [ ] ESG data marketplace for investors
-- [ ] Tree-planting rewards or carbon credit partnerships
+```mermaid
+%%{init: {
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Segoe UI, sans-serif",
+    "fontSize": "14px",
+    "lineColor": "#546E7A",
+    "textColor": "#263238"
+  }
+}}%%
+graph TD
+  %% Main Phases
+  P1[<b style='color:#1B5E20;'>Phase 1:</b><br>Foundation<br><span style='font-size:12px;'>0–12 Months</span>]
+  P2[<b style='color:#0D47A1;'>Phase 2:</b><br>Expansion<br><span style='font-size:12px;'>1–3 Years</span>]
+  P3[<b style='color:#4A148C;'>Phase 3:</b><br>Ecosystem<br><span style='font-size:12px;'>3–5 Years</span>]
+  D[<b style='color:#00695C;'>🌍 Global Scalability</b>]
 
+  %% Phase 1 Components
+  P1 --> A1[📱 TnG Integration]
+  P1 --> A2[🌿 Core Carbon Tracker]
+  P1 --> A3[🎮 Gamification Engine]
+  P1 --> A4[🤖 AI Assistant]
+
+  %% Phase 2 Components
+  P2 --> B1[🏦 Banking Partners<br>Maybank, CIMB]
+  P2 --> B2[🛒 Retail Integrations<br>Starbucks, Lotus's]
+  P2 --> B3[🧠 Behavioral AI<br>Personalized Green Tips]
+  P2 --> B4[🌏 ASEAN Localization]
+
+  %% Phase 3 Components
+  P3 --> C1[📊 ESG Data Marketplace]
+  P3 --> C2[♻️ Carbon Credit Exchange]
+  P3 --> C3[🌳 Tree-Planting Rewards]
+  P3 --> C4[🤝 Gov API Integration]
+
+  %% Flow Logic
+  A1 & A2 & A3 & A4 --> P2
+  B1 & B2 & B3 & B4 --> P3
+  P3 -.-> D
+
+  %% Custom Styling Classes
+  classDef greenPhase fill:#E8F5E9,stroke:#1B5E20,stroke-width:2px;
+  classDef bluePhase fill:#E3F2FD,stroke:#0D47A1,stroke-width:2px;
+  classDef purplePhase fill:#F3E5F5,stroke:#4A148C,stroke-width:2px;
+  classDef finalGoal fill:#E0F2F1,stroke:#00695C,stroke-width:2px,font-weight:bold;
+
+  class P1 greenPhase;
+  class P2 bluePhase;
+  class P3 purplePhase;
+  class D finalGoal;
+
+```
 ---
 
 ## 👥 Team
