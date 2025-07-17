@@ -20,12 +20,28 @@ Our solution is EcoPay, a feature designed to integrate seamlessly into existing
 
 ## The Problem
 
+### 🌍 Environmental & Social Challenges
+
 Today, ESG efforts are mostly limited to corporations and investors. Regular consumers are left out, even though they are part of the impact chain. There is no easy or engaging way for users to:
-- Understand their carbon footprint
-- Make greener spending choices
-- Contribute to social or environmental causes through payments
+- **Understand their carbon footprint**: Most consumers have no visibility into how their daily purchases contribute to climate change
+- **Make greener spending choices**: Lack of real-time information about environmental impact of products/services at point of purchase
+- **Contribute to social or environmental causes through payments**: No seamless integration of charitable giving into everyday transactions
 
 Despite the rise of e-wallets and DuitNow QR in Malaysia, these platforms do not currently promote sustainability in a meaningful way.
+
+### 🏢 Market & Adoption Barriers
+
+#### Consumer Behavior Challenges:
+- **Sustainability Fatigue**: Users may become overwhelmed by constant environmental messaging and disengage
+- **Price Sensitivity**: Malaysian consumers, especially Gen Z, may prioritize cost over sustainability despite stated preferences
+- **Digital Literacy Gaps**: Rural users and older demographics may struggle with gamification and impact tracking features
+- **Trust Issues**: Users may be skeptical of environmental impact calculations without third-party verification
+
+#### Business Integration Challenges:
+- **E-Wallet Integration Complexity**: Each e-wallet platform (TnG, Boost, GrabPay) has different APIs and integration requirements
+- **Merchant Adoption**: Requires cooperation from merchants to provide detailed product information for accurate impact calculations
+- **Revenue Model Uncertainty**: Unclear sustainable business model for funding the platform long-term
+- **Regulatory Compliance**: Need to comply with financial regulations and data protection laws across different jurisdictions
 
 ---
 
