@@ -1,14 +1,32 @@
+enum AchievementTier { bronze, silver, gold, platinum, diamond }
+
+enum AchievementType {
+  completion,
+  environmental,
+  social,
+  financial,
+  consistency,
+  exploration,
+  special
+}
+
 class Achievement {
   final int? id;
   final String name;
   final String description;
   final String target;
+  final AchievementTier tier;
+  final AchievementType type;
+  final int pointsReward;
 
   Achievement({
     this.id,
     required this.name,
     required this.description,
     required this.target,
+    required this.tier,
+    required this.type,
+    required this.pointsReward,
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +35,9 @@ class Achievement {
       'name': name,
       'description': description,
       'target': target,
+      'tier': tier.name,
+      'type': type.name,
+      'points_reward': pointsReward,
     };
   }
 
@@ -26,6 +47,15 @@ class Achievement {
       name: map['name'],
       description: map['description'],
       target: map['target'],
+      tier: AchievementTier.values.firstWhere(
+        (e) => e.name == map['tier'],
+        orElse: () => AchievementTier.bronze,
+      ),
+      type: AchievementType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => AchievementType.completion,
+      ),
+      pointsReward: map['points_reward'] ?? 50,
     );
   }
 }
