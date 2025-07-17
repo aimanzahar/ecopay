@@ -103,6 +103,7 @@ flowchart TD
 <p float="left">
   <img src="assets/readme_img/dashboard1.png" width="300" alt="Dashboard View 1"/>
   <img src="assets/readme_img/dashboard2.png" width="300" alt="Dashboard View 2"/>
+  <img src="assets/readme_img/dashboard3.png" width="300" alt="Dashboard View 2"/>
 </p>
 
 ---
@@ -117,6 +118,17 @@ flowchart TD
 </p>
 
 ---
+
+### MyContribution page
+
+<p float="left">
+  <img src="assets/readme_img/contribution1.png" width="300" alt="Success Screen"/>
+    <img src="assets/readme_img/contribution2.png" width="300" alt="Success Screen"/>
+</p>
+
+---
+
+
 
 ### ✅ Confirmation & Success
 <p float="left">
