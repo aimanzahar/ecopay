@@ -109,6 +109,9 @@ class PlaceholderData {
       name: "First Transaction",
       description: "Complete your first EcoPay transaction",
       target: "1 transaction",
+      tier: AchievementTier.bronze,
+      type: AchievementType.completion,
+      pointsReward: 50,
     ),
     
     Achievement(
@@ -116,6 +119,9 @@ class PlaceholderData {
       name: "Eco Contributor",
       description: "Make your first environmental donation",
       target: "1 donation",
+      tier: AchievementTier.bronze,
+      type: AchievementType.environmental,
+      pointsReward: 75,
     ),
     
     Achievement(
@@ -123,6 +129,9 @@ class PlaceholderData {
       name: "Green Guardian",
       description: "Save 50kg of CO2 through your transactions",
       target: "50kg CO2 saved",
+      tier: AchievementTier.silver,
+      type: AchievementType.environmental,
+      pointsReward: 100,
     ),
     
     Achievement(
@@ -130,6 +139,9 @@ class PlaceholderData {
       name: "Daily User",
       description: "Use EcoPay for 5 consecutive days",
       target: "5 days streak",
+      tier: AchievementTier.bronze,
+      type: AchievementType.consistency,
+      pointsReward: 75,
     ),
     
     Achievement(
@@ -137,6 +149,9 @@ class PlaceholderData {
       name: "Payment Pro",
       description: "Complete 50 transactions with EcoPay",
       target: "50 transactions",
+      tier: AchievementTier.gold,
+      type: AchievementType.completion,
+      pointsReward: 200,
     ),
     
     Achievement(
@@ -144,6 +159,9 @@ class PlaceholderData {
       name: "Community Champion",
       description: "Refer 5 friends to use EcoPay",
       target: "5 referrals",
+      tier: AchievementTier.silver,
+      type: AchievementType.social,
+      pointsReward: 150,
     ),
     
     Achievement(
@@ -151,6 +169,9 @@ class PlaceholderData {
       name: "Milestone Master",
       description: "Complete 10 challenges",
       target: "10 challenges",
+      tier: AchievementTier.gold,
+      type: AchievementType.completion,
+      pointsReward: 250,
     ),
     
     Achievement(
@@ -158,6 +179,9 @@ class PlaceholderData {
       name: "Eco Hero",
       description: "Save 500kg of CO2 in total",
       target: "500kg CO2 saved",
+      tier: AchievementTier.platinum,
+      type: AchievementType.environmental,
+      pointsReward: 500,
     ),
   ];
 
@@ -168,9 +192,12 @@ class PlaceholderData {
       userId: 1,
       challengeId: 1,
       currentProgress: 3,
+      targetValue: 5,
       status: ChallengeProgressStatus.inProgress,
+      createdAt: DateTime.now().subtract(Duration(days: 7)),
+      updatedAt: DateTime.now().subtract(Duration(hours: 2)),
       lastUpdated: DateTime.now().subtract(Duration(hours: 2)),
-      dateCompleted: null,
+      completionDate: null,
     ),
     
     2: ChallengeProgress(
@@ -178,9 +205,12 @@ class PlaceholderData {
       userId: 1,
       challengeId: 2,
       currentProgress: 25,
+      targetValue: 50,
       status: ChallengeProgressStatus.inProgress,
+      createdAt: DateTime.now().subtract(Duration(days: 3)),
+      updatedAt: DateTime.now().subtract(Duration(days: 1)),
       lastUpdated: DateTime.now().subtract(Duration(days: 1)),
-      dateCompleted: null,
+      completionDate: null,
     ),
     
     3: ChallengeProgress(
@@ -188,9 +218,12 @@ class PlaceholderData {
       userId: 1,
       challengeId: 3,
       currentProgress: 4,
+      targetValue: 7,
       status: ChallengeProgressStatus.inProgress,
+      createdAt: DateTime.now().subtract(Duration(days: 5)),
+      updatedAt: DateTime.now(),
       lastUpdated: DateTime.now(),
-      dateCompleted: null,
+      completionDate: null,
     ),
     
     4: ChallengeProgress(
@@ -198,9 +231,12 @@ class PlaceholderData {
       userId: 1,
       challengeId: 4,
       currentProgress: 45,
+      targetValue: 100,
       status: ChallengeProgressStatus.inProgress,
+      createdAt: DateTime.now().subtract(Duration(days: 2)),
+      updatedAt: DateTime.now().subtract(Duration(days: 3)),
       lastUpdated: DateTime.now().subtract(Duration(days: 3)),
-      dateCompleted: null,
+      completionDate: null,
     ),
     
     5: ChallengeProgress(
@@ -208,9 +244,12 @@ class PlaceholderData {
       userId: 1,
       challengeId: 5,
       currentProgress: 1,
+      targetValue: 3,
       status: ChallengeProgressStatus.inProgress,
+      createdAt: DateTime.now().subtract(Duration(days: 1)),
+      updatedAt: DateTime.now().subtract(Duration(days: 2)),
       lastUpdated: DateTime.now().subtract(Duration(days: 2)),
-      dateCompleted: null,
+      completionDate: null,
     ),
   };
 

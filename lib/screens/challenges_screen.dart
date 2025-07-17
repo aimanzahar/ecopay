@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../services/mock_data_service.dart';
 import '../services/challenge_service.dart';
 import '../models/user.dart';
 import '../models/challenge.dart' as ChallengeModel;
 import '../models/challenge_progress.dart';
-import '../helpers/database_helper.dart';
 
 class ChallengesScreen extends StatefulWidget {
   const ChallengesScreen({super.key});
@@ -15,57 +15,44 @@ class ChallengesScreen extends StatefulWidget {
 
 class _ChallengesScreenState extends State<ChallengesScreen>
     with TickerProviderStateMixin {
-  final ChallengeService _challengeService = ChallengeService();
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
-  
   late TabController _tabController;
   late AnimationController _rotationController;
   late AnimationController _scaleController;
   late AnimationController _slideController;
   late Animation<double> _scaleAnimation;
 
-  Map<String, dynamic> _challengesByCategory = {};
-  Map<String, dynamic> _challengeStats = {};
-  List<dynamic> _activeChallenges = [];
-  List<dynamic> _completedChallenges = [];
-  List<dynamic> _upcomingChallenges = [];
+  List<ChallengeModel.Challenge> _allChallenges = [];
+  List<ChallengeProgress> _userChallengeProgress = [];
   bool _isLoading = true;
   User? _currentUser;
+  final ChallengeService _challengeService = ChallengeService();
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    
-    // Animation controllers
+
     _rotationController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
-    );
-    
+    )..repeat();
+
     _scaleController = AnimationController(
       duration: const Duration(milliseconds: 1200),
       vsync: this,
-    );
-    
+    )..repeat(reverse: true);
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
-    );
-    
-    // Animations
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.1,
-    ).animate(CurvedAnimation(
+    )..forward();
+
+    _scaleAnimation =
+        Tween<double>(begin: 0.8, end: 1.1).animate(CurvedAnimation(
       parent: _scaleController,
       curve: Curves.elasticOut,
     ));
-    
-    _rotationController.repeat();
-    _scaleController.repeat(reverse: true);
-    _slideController.forward();
-    
+
     _loadData();
   }
 
@@ -79,33 +66,12 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   }
 
   Future<void> _loadData() async {
-    try {
-      setState(() => _isLoading = true);
-      
-      // Get current user (assuming user ID 1 for now)
-      _currentUser = await _databaseHelper.getUser(1);
-      
-      if (_currentUser != null && _currentUser!.id != null) {
-        // Load challenges data
-        final challengesByCategory = await _challengeService.getChallengesByCategory(_currentUser!.id!);
-        final stats = await _challengeService.getChallengeStats(_currentUser!.id!);
-        final active = await _challengeService.getActiveChallenges(_currentUser!.id!);
-        final completed = await _challengeService.getCompletedChallenges(_currentUser!.id!);
-        final upcoming = await _challengeService.getUpcomingChallenges(_currentUser!.id!);
-        
-        setState(() {
-          _challengesByCategory = challengesByCategory;
-          _challengeStats = stats;
-          _activeChallenges = active;
-          _completedChallenges = completed;
-          _upcomingChallenges = upcoming;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading challenges data: $e');
-      setState(() => _isLoading = false);
-    }
+    setState(() => _isLoading = true);
+    _currentUser = MockDataService.getUsers().first;
+    _allChallenges = MockDataService.getChallenges();
+    _userChallengeProgress =
+        MockDataService.getChallengeProgressForUser(_currentUser!.id!);
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -158,6 +124,19 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   }
 
   Widget _buildStatsHeader() {
+    final completedChallenges = _userChallengeProgress
+        .where((p) => p.status == ChallengeProgressStatus.completed);
+    final activeChallenges = _allChallenges.where((c) =>
+        c.isCurrentlyActive &&
+        !completedChallenges.any((p) => p.challengeId == c.id));
+    final pointsEarned = completedChallenges.fold<int>(
+        0,
+        (sum, p) =>
+            sum +
+            _allChallenges
+                .firstWhere((c) => c.id == p.challengeId)
+                .pointsReward);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -172,25 +151,25 @@ class _ChallengesScreenState extends State<ChallengesScreen>
         children: [
           _buildStatItem(
             'Active',
-            '${_challengeStats['active'] ?? 0}',
+            '${activeChallenges.length}',
             Icons.play_arrow,
             Colors.green,
           ),
           _buildStatItem(
             'Completed',
-            '${_challengeStats['completed'] ?? 0}',
+            '${completedChallenges.length}',
             Icons.check_circle,
             Colors.blue,
           ),
           _buildStatItem(
             'Points Earned',
-            '${_challengeStats['total_points'] ?? 0}',
+            '$pointsEarned',
             Icons.star,
             Colors.amber,
           ),
           _buildStatItem(
             'Streak',
-            '${_challengeStats['current_streak'] ?? 0}',
+            '0', // Placeholder for streak
             Icons.local_fire_department,
             Colors.orange,
           ),
@@ -238,13 +217,21 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   }
 
   Widget _buildActiveTab() {
+    final completedIds = _userChallengeProgress
+        .where((p) => p.status == ChallengeProgressStatus.completed)
+        .map((p) => p.challengeId)
+        .toList();
+    final activeChallenges = _allChallenges
+        .where((c) => c.isCurrentlyActive && !completedIds.contains(c.id))
+        .toList();
+
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _activeChallenges.length,
+        itemCount: activeChallenges.length,
         itemBuilder: (context, index) {
-          final challengeData = _activeChallenges[index];
+          final challenge = activeChallenges[index];
           return SlideTransition(
             position: Tween<Offset>(
               begin: const Offset(-1.0, 0),
@@ -253,7 +240,8 @@ class _ChallengesScreenState extends State<ChallengesScreen>
               parent: _slideController,
               curve: Interval(index * 0.1, 1.0, curve: Curves.easeOut),
             )),
-            child: _buildChallengeCard(challengeData, ChallengeModel.ChallengeStatus.active),
+            child: _buildChallengeCard(
+                challenge, ChallengeModel.ChallengeStatus.active),
           );
         },
       ),
@@ -261,57 +249,90 @@ class _ChallengesScreenState extends State<ChallengesScreen>
   }
 
   Widget _buildCompletedTab() {
+    final completedChallenges = _allChallenges
+        .where((c) => _userChallengeProgress.any((p) =>
+            p.challengeId == c.id &&
+            p.status == ChallengeProgressStatus.completed))
+        .toList();
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _completedChallenges.length,
+      itemCount: completedChallenges.length,
       itemBuilder: (context, index) {
-        final challengeData = _completedChallenges[index];
-        return _buildChallengeCard(challengeData, ChallengeModel.ChallengeStatus.completed);
+        final challenge = completedChallenges[index];
+        return _buildChallengeCard(
+            challenge, ChallengeModel.ChallengeStatus.completed);
       },
     );
   }
 
   Widget _buildUpcomingTab() {
+    final upcomingChallenges =
+        _allChallenges.where((c) => c.startDate.isAfter(DateTime.now()));
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _upcomingChallenges.length,
+      itemCount: upcomingChallenges.length,
       itemBuilder: (context, index) {
-        final challengeData = _upcomingChallenges[index];
-        return _buildChallengeCard(challengeData, ChallengeModel.ChallengeStatus.upcoming);
+        final challenge = upcomingChallenges.toList()[index];
+        return _buildChallengeCard(
+            challenge, ChallengeModel.ChallengeStatus.upcoming);
       },
     );
   }
 
   Widget _buildCategoriesTab() {
+    final challengesByCategory =
+        <ChallengeModel.ChallengeCategory, List<ChallengeModel.Challenge>>{};
+    for (var challenge in _allChallenges) {
+      challengesByCategory
+          .putIfAbsent(challenge.category, () => [])
+          .add(challenge);
+    }
+
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: _challengesByCategory.entries.map((category) {
-        return _buildCategorySection(category.key, category.value as List<dynamic>);
+      children: challengesByCategory.entries.map((entry) {
+        return _buildCategorySection(entry.key, entry.value);
       }).toList(),
     );
   }
 
-  Widget _buildCategorySection(String categoryName, List<dynamic> challenges) {
+  Widget _buildCategorySection(ChallengeModel.ChallengeCategory category,
+      List<ChallengeModel.Challenge> challenges) {
     return ExpansionTile(
       title: Text(
-        _getCategoryDisplayName(categoryName),
+        _getCategoryDisplayName(category.name),
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
         ),
       ),
-      leading: Icon(_getCategoryIcon(categoryName)),
-      children: challenges.map((challengeData) {
-        final challenge = challengeData['challenge'] as ChallengeModel.Challenge;
-        return _buildChallengeCard(challengeData, challenge.status);
+      leading: Icon(_getCategoryIcon(category.name)),
+      children: challenges.map((challenge) {
+        return _buildChallengeCard(challenge, challenge.status);
       }).toList(),
     );
   }
 
-  Widget _buildChallengeCard(dynamic challengeData, ChallengeModel.ChallengeStatus status) {
-    final challenge = challengeData['challenge'] as ChallengeModel.Challenge;
-    final progress = challengeData['progress'] as ChallengeProgress?;
-    final progressPercentage = challengeData['progress_percentage'] as double? ?? 0.0;
+  Widget _buildChallengeCard(
+      ChallengeModel.Challenge challenge, ChallengeModel.ChallengeStatus status) {
+    final progress = _userChallengeProgress
+        .firstWhere((p) => p.challengeId == challenge.id, orElse: () {
+      // Create a dummy progress for challenges the user hasn't started.
+      final now = DateTime.now();
+      return ChallengeProgress(
+          id: -1,
+          userId: _currentUser!.id!,
+          challengeId: challenge.id!,
+          currentProgress: 0,
+          targetValue: challenge.targetValue,
+          createdAt: now,
+          updatedAt: now,
+          status: ChallengeProgressStatus.notStarted,
+          lastUpdated: now);
+    });
+    final progressPercentage =
+        (progress.currentProgress / progress.targetValue * 100)
+            .clamp(0.0, 100.0);
 
     Color cardColor;
     Color borderColor;

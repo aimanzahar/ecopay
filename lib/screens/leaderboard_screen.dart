@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../services/leaderboard_service.dart';
+import '../services/mock_data_service.dart';
 import '../models/user.dart';
-import '../models/leaderboard_entry.dart';
-import '../helpers/database_helper.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   const LeaderboardScreen({super.key});
@@ -14,9 +12,6 @@ class LeaderboardScreen extends StatefulWidget {
 
 class _LeaderboardScreenState extends State<LeaderboardScreen>
     with TickerProviderStateMixin {
-  final LeaderboardService _leaderboardService = LeaderboardService();
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
-  
   late TabController _tabController;
   late AnimationController _bounceController;
   late AnimationController _shimmerController;
@@ -25,66 +20,48 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   late Animation<double> _shimmerAnimation;
   late Animation<double> _countUpAnimation;
 
-  Map<String, List<LeaderboardEntry>> _leaderboards = {};
-  Map<String, dynamic> _userStats = {};
-  List<LeaderboardEntry> _weeklyLeaderboard = [];
-  List<LeaderboardEntry> _monthlyLeaderboard = [];
-  List<LeaderboardEntry> _allTimeLeaderboard = [];
-  List<LeaderboardEntry> _friendsLeaderboard = [];
+  List<User> _users = [];
   bool _isLoading = true;
   User? _currentUser;
-  String _selectedPeriod = 'weekly';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    
-    // Animation controllers
+
     _bounceController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
-    );
-    
+    )..forward();
+
     _shimmerController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
-    );
-    
+    )..repeat();
+
     _countUpController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
-    );
-    
-    // Animations
-    _bounceAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+    )..forward();
+
+    _bounceAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _bounceController,
       curve: Curves.elasticOut,
     ));
-    
-    _shimmerAnimation = Tween<double>(
-      begin: -1.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+
+    _shimmerAnimation =
+        Tween<double>(begin: -1.0, end: 1.0).animate(CurvedAnimation(
       parent: _shimmerController,
       curve: Curves.easeInOut,
     ));
-    
-    _countUpAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+
+    _countUpAnimation =
+        Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(
       parent: _countUpController,
       curve: Curves.easeOut,
     ));
-    
-    _shimmerController.repeat();
-    _bounceController.forward();
-    _countUpController.forward();
-    
+
     _loadData();
   }
 
@@ -98,35 +75,12 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Future<void> _loadData() async {
-    try {
-      setState(() => _isLoading = true);
-      
-      // Get current user (assuming user ID 1 for now)
-      _currentUser = await _databaseHelper.getUser(1);
-      
-      if (_currentUser != null && _currentUser!.id != null) {
-        // Load leaderboard data
-        final leaderboards = await _leaderboardService.getAllLeaderboards();
-        final userStats = await _leaderboardService.getUserStats(_currentUser!.id!);
-        final weekly = await _leaderboardService.getWeeklyLeaderboard();
-        final monthly = await _leaderboardService.getMonthlyLeaderboard();
-        final allTime = await _leaderboardService.getAllTimeLeaderboard();
-        final friends = await _leaderboardService.getFriendsLeaderboard(_currentUser!.id!);
-        
-        setState(() {
-          _leaderboards = leaderboards;
-          _userStats = userStats;
-          _weeklyLeaderboard = weekly;
-          _monthlyLeaderboard = monthly;
-          _allTimeLeaderboard = allTime;
-          _friendsLeaderboard = friends;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Error loading leaderboard data: $e');
-      setState(() => _isLoading = false);
-    }
+    setState(() => _isLoading = true);
+    _currentUser = MockDataService.getUsers().first;
+    _users = MockDataService.getUsers();
+    // Sort users by points for the leaderboard
+    _users.sort((a, b) => b.totalPoints.compareTo(a.totalPoints));
+    setState(() => _isLoading = false);
   }
 
   @override
@@ -161,9 +115,9 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _buildLeaderboardTab(_weeklyLeaderboard, 'weekly'),
-                      _buildLeaderboardTab(_monthlyLeaderboard, 'monthly'),
-                      _buildLeaderboardTab(_allTimeLeaderboard, 'all_time'),
+                      _buildLeaderboardTab(_users, 'weekly'),
+                      _buildLeaderboardTab(_users, 'monthly'),
+                      _buildLeaderboardTab(_users, 'all_time'),
                       _buildFriendsTab(),
                     ],
                   ),
@@ -319,6 +273,8 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildStatsHeader() {
+    final currentUserRank =
+        _users.indexWhere((u) => u.id == _currentUser!.id) + 1;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -333,25 +289,25 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         children: [
           _buildStatItem(
             'Current Rank',
-            '#${_userStats['current_rank'] ?? '?'}',
+            '#$currentUserRank',
             Icons.emoji_events,
             Colors.amber,
           ),
           _buildStatItem(
             'Total Points',
-            '${_userStats['total_points'] ?? 0}',
+            '${_currentUser!.totalPoints}',
             Icons.star,
             Colors.purple,
           ),
           _buildStatItem(
             'This Week',
-            '${_userStats['weekly_points'] ?? 0}',
+            '0', // Placeholder
             Icons.trending_up,
             Colors.green,
           ),
           _buildStatItem(
             'Friends Beat',
-            '${_userStats['friends_beaten'] ?? 0}',
+            '0', // Placeholder
             Icons.group,
             Colors.blue,
           ),
@@ -408,14 +364,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildLeaderboardTab(List<LeaderboardEntry> entries, String period) {
+  Widget _buildLeaderboardTab(List<User> users, String period) {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: entries.length,
+        itemCount: users.length,
         itemBuilder: (context, index) {
-          final entry = entries[index];
+          final user = users[index];
           return SlideTransition(
             position: Tween<Offset>(
               begin: Offset(index.isEven ? -1.0 : 1.0, 0),
@@ -424,7 +380,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
               parent: _bounceController,
               curve: Interval(index * 0.1, 1.0, curve: Curves.easeOutBack),
             )),
-            child: _buildLeaderboardCard(entry, index),
+            child: _buildLeaderboardCard(user, index),
           );
         },
       ),
@@ -432,11 +388,13 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
   }
 
   Widget _buildFriendsTab() {
+    // For now, let's just show a subset of users as "friends"
+    final friends = _users.take(5).toList();
     return RefreshIndicator(
       onRefresh: _loadData,
       child: Column(
         children: [
-          if (_friendsLeaderboard.isEmpty) ...[
+          if (friends.isEmpty) ...[
             const Expanded(
               child: Center(
                 child: Column(
@@ -464,10 +422,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(16),
-                itemCount: _friendsLeaderboard.length,
+                itemCount: friends.length,
                 itemBuilder: (context, index) {
-                  final entry = _friendsLeaderboard[index];
-                  return _buildFriendCard(entry, index);
+                  final user = friends[index];
+                  return _buildFriendCard(user, index);
                 },
               ),
             ),
@@ -490,10 +448,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildLeaderboardCard(LeaderboardEntry entry, int index) {
-    final isCurrentUser = entry.userId == _currentUser?.id;
+  Widget _buildLeaderboardCard(User user, int index) {
+    final isCurrentUser = user.id == _currentUser?.id;
     final rank = index + 1;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: isCurrentUser ? 8 : 2,
@@ -505,7 +463,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
         ),
       ),
       child: InkWell(
-        onTap: () => _showUserProfile(entry),
+        onTap: () => _showUserProfile(user),
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(16),
@@ -523,14 +481,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
             children: [
               _buildRankBadge(rank),
               const SizedBox(width: 16),
-              _buildUserAvatar(entry.username),
+              _buildUserAvatar(user.username),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      entry.username,
+                      user.username,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -538,7 +496,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       ),
                     ),
                     const SizedBox(height: 4),
-                    _buildProgressInfo(entry),
+                    _buildProgressInfo(user),
                   ],
                 ),
               ),
@@ -546,7 +504,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${entry.points}',
+                    '${user.totalPoints}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -560,10 +518,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                       color: Colors.grey,
                     ),
                   ),
-                  if (entry.trend != null) ...[
-                    const SizedBox(height: 4),
-                    _buildTrendIndicator(entry.trend!),
-                  ],
                 ],
               ),
             ],
@@ -573,30 +527,30 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildFriendCard(LeaderboardEntry entry, int index) {
+  Widget _buildFriendCard(User user, int index) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () => _showUserProfile(entry),
+        onTap: () => _showUserProfile(user),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              _buildUserAvatar(entry.username),
+              _buildUserAvatar(user.username),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      entry.username,
+                      user.username,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    _buildProgressInfo(entry),
+                    _buildProgressInfo(user),
                   ],
                 ),
               ),
@@ -604,7 +558,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    '${entry.points}',
+                    '${user.totalPoints}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -692,19 +646,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildProgressInfo(LeaderboardEntry entry) {
+  Widget _buildProgressInfo(User user) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '${entry.co2Saved.toStringAsFixed(1)}kg CO₂ saved',
+          'Level ${user.level}',
           style: const TextStyle(
             fontSize: 12,
             color: Colors.grey,
           ),
         ),
         const SizedBox(height: 4),
-        _buildMiniProgressBar(entry.points, entry.targetPoints ?? 1000),
+        _buildMiniProgressBar(user.totalPoints % 1000, 1000),
       ],
     );
   }
@@ -730,41 +684,19 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
     );
   }
 
-  Widget _buildTrendIndicator(String trend) {
-    IconData icon;
-    Color color;
-    
-    switch (trend) {
-      case 'up':
-        icon = Icons.trending_up;
-        color = Colors.green;
-        break;
-      case 'down':
-        icon = Icons.trending_down;
-        color = Colors.red;
-        break;
-      default:
-        icon = Icons.trending_flat;
-        color = Colors.grey;
-        break;
-    }
-    
-    return Icon(icon, color: color, size: 16);
-  }
-
-  void _showUserProfile(LeaderboardEntry entry) {
+  void _showUserProfile(User user) {
     HapticFeedback.lightImpact();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            _buildUserAvatar(entry.username),
+            _buildUserAvatar(user.username),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                entry.username,
+                user.username,
                 style: const TextStyle(fontSize: 18),
               ),
             ),
@@ -774,21 +706,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Points: ${entry.points}'),
-            Text('CO₂ Saved: ${entry.co2Saved.toStringAsFixed(1)}kg'),
-            Text('Rank: #${entry.rank}'),
-            if (entry.achievements.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              const Text('Recent Achievements:'),
-              ...entry.achievements.take(3).map((achievement) => 
-                  Text('• $achievement', style: const TextStyle(fontSize: 12))),
-            ],
+            Text('Points: ${user.totalPoints}'),
+            Text('Level: ${user.level}'),
           ],
         ),
         actions: [
-          if (entry.userId != _currentUser?.id) ...[
+          if (user.id != _currentUser?.id) ...[
             TextButton(
-              onPressed: () => _addFriend(entry.userId),
+              onPressed: () => _addFriend(user.id!),
               child: const Text('Add Friend'),
             ),
           ],

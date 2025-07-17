@@ -1,3 +1,12 @@
+// Challenge Progress Status Enum
+enum ChallengeProgressStatus {
+  notStarted,
+  inProgress,
+  completed,
+  failed,
+  expired,
+}
+
 class ChallengeProgress {
   final int? id;
   final int userId;
@@ -8,6 +17,8 @@ class ChallengeProgress {
   final DateTime? completionDate;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final ChallengeProgressStatus status;
+  final DateTime lastUpdated;
 
   ChallengeProgress({
     this.id,
@@ -19,6 +30,8 @@ class ChallengeProgress {
     this.completionDate,
     required this.createdAt,
     required this.updatedAt,
+    this.status = ChallengeProgressStatus.notStarted,
+    required this.lastUpdated,
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +45,8 @@ class ChallengeProgress {
       'completion_date': completionDate?.toIso8601String(),
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt.toIso8601String(),
+      'status': status.index,
+      'last_updated': lastUpdated.toIso8601String(),
     };
   }
 
@@ -48,6 +63,8 @@ class ChallengeProgress {
           : null,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      status: ChallengeProgressStatus.values[map['status'] ?? 0],
+      lastUpdated: DateTime.parse(map['last_updated']),
     );
   }
 
@@ -119,6 +136,8 @@ class ChallengeProgress {
     DateTime? completionDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    ChallengeProgressStatus? status,
+    DateTime? lastUpdated,
   }) {
     return ChallengeProgress(
       id: id ?? this.id,
@@ -130,6 +149,8 @@ class ChallengeProgress {
       completionDate: completionDate ?? this.completionDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      status: status ?? this.status,
+      lastUpdated: lastUpdated ?? this.lastUpdated,
     );
   }
 }
@@ -143,15 +164,17 @@ class ChallengeProgressWithDetails extends ChallengeProgress {
   final DateTime endDate;
 
   ChallengeProgressWithDetails({
-    required super.id,
+    super.id,
     required super.userId,
     required super.challengeId,
-    required super.currentProgress,
+    super.currentProgress = 0,
     required super.targetValue,
-    required super.isCompleted,
-    required super.completionDate,
+    super.isCompleted = false,
+    super.completionDate,
     required super.createdAt,
     required super.updatedAt,
+    super.status = ChallengeProgressStatus.notStarted,
+    required super.lastUpdated,
     required this.title,
     required this.description,
     required this.targetUnit,
@@ -166,11 +189,12 @@ class ChallengeProgressWithDetails extends ChallengeProgress {
       challengeId: map['challenge_id'],
       currentProgress: map['current_progress'] ?? 0,
       isCompleted: map['is_completed'] == 1,
-      completionDate: map['completion_date'] != null 
-          ? DateTime.parse(map['completion_date']) 
+      completionDate: map['completion_date'] != null
+          ? DateTime.parse(map['completion_date'])
           : null,
       createdAt: DateTime.parse(map['created_at']),
       updatedAt: DateTime.parse(map['updated_at']),
+      lastUpdated: DateTime.parse(map['last_updated']),
       title: map['title'],
       description: map['description'],
       targetValue: map['target_value'],
