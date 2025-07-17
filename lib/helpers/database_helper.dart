@@ -30,7 +30,7 @@ class DatabaseHelper {
 
     String path = join(await getDatabasesPath(), 'ecopay.db');
     print('DEBUG: DatabaseHelper._initDatabase - Database path: $path');
-    return await openDatabase(path, version: 3, onCreate: _createDatabase, onUpgrade: _onUpgrade);
+    return await openDatabase(path, version: 5, onCreate: _createDatabase, onUpgrade: _onUpgrade);
   }
 
   Future<void> _createDatabase(Database db, int version) async {
@@ -107,6 +107,84 @@ class DatabaseHelper {
       )
     ''');
 
+    // New gamification tables
+    await db.execute('''
+      CREATE TABLE user_points (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        points_earned INTEGER NOT NULL,
+        points_source TEXT NOT NULL,
+        transaction_id TEXT,
+        contribution_id INTEGER,
+        achievement_id INTEGER,
+        challenge_id INTEGER,
+        timestamp TEXT NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (contribution_id) REFERENCES contributions (id),
+        FOREIGN KEY (achievement_id) REFERENCES achievements (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE challenges (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        challenge_type TEXT NOT NULL,
+        target_value INTEGER NOT NULL,
+        target_unit TEXT NOT NULL,
+        points_reward INTEGER NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE challenge_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        challenge_id INTEGER NOT NULL,
+        current_progress INTEGER NOT NULL DEFAULT 0,
+        is_completed INTEGER NOT NULL DEFAULT 0,
+        completion_date TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id),
+        FOREIGN KEY (challenge_id) REFERENCES challenges (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE leaderboard_entries (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        leaderboard_type TEXT NOT NULL,
+        score REAL NOT NULL,
+        ranking INTEGER NOT NULL,
+        period_start TEXT NOT NULL,
+        period_end TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE notifications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        notification_type TEXT NOT NULL,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        related_id INTEGER,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users (id)
+      )
+    ''');
+
     // Insert initial balance
     await db.insert('balance', {
       'amount': 96.54,
@@ -137,7 +215,12 @@ class DatabaseHelper {
         CREATE TABLE users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT NOT NULL,
-          ecopay_opt_in INTEGER NOT NULL DEFAULT 0
+          ecopay_opt_in INTEGER NOT NULL DEFAULT 0,
+          total_points INTEGER NOT NULL DEFAULT 0,
+          level INTEGER NOT NULL DEFAULT 1,
+          badges_earned TEXT DEFAULT '',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          last_active TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
       ''');
       await db.execute('''
@@ -180,6 +263,180 @@ class DatabaseHelper {
         )
       ''');
     }
+    
+    if (oldVersion < 4) {
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 4');
+      
+      // Check current table structure before migration
+      final tableInfo = await db.rawQuery("PRAGMA table_info(users)");
+      print('DEBUG: Current users table structure: $tableInfo');
+      
+      try {
+        // Add new columns to users table
+        print('DEBUG: Adding total_points column');
+        await db.execute('ALTER TABLE users ADD COLUMN total_points INTEGER NOT NULL DEFAULT 0');
+        
+        print('DEBUG: Adding level column');
+        await db.execute('ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 1');
+        
+        print('DEBUG: Adding badges_earned column');
+        await db.execute('ALTER TABLE users ADD COLUMN badges_earned TEXT DEFAULT ""');
+        
+        // FIXED: Multi-step approach for adding timestamp columns
+        print('DEBUG: Adding created_at column using multi-step approach');
+        try {
+          // Step 1: Add column as nullable first
+          await db.execute('ALTER TABLE users ADD COLUMN created_at TEXT');
+          
+          // Step 2: Update existing rows with current timestamp
+          await db.execute("UPDATE users SET created_at = datetime('now') WHERE created_at IS NULL");
+          
+          print('DEBUG: Successfully added created_at column');
+        } catch (e) {
+          print('ERROR: Failed to add created_at column: $e');
+          rethrow;
+        }
+        
+        print('DEBUG: Adding last_active column using multi-step approach');
+        try {
+          // Step 1: Add column as nullable first
+          await db.execute('ALTER TABLE users ADD COLUMN last_active TEXT');
+          
+          // Step 2: Update existing rows with current timestamp
+          await db.execute("UPDATE users SET last_active = datetime('now') WHERE last_active IS NULL");
+          
+          print('DEBUG: Successfully added last_active column');
+        } catch (e) {
+          print('ERROR: Failed to add last_active column: $e');
+          rethrow;
+        }
+        
+      } catch (e) {
+        print('ERROR: Migration failed at line ${e.toString()}');
+        print('ERROR: This is the SQLite constraint error we\'re debugging');
+        print('ERROR: SQLite doesn\'t support non-constant defaults in ALTER TABLE ADD COLUMN with NOT NULL');
+        rethrow;
+      }
+      
+      // Create new gamification tables
+      await db.execute('''
+        CREATE TABLE user_points (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          points_earned INTEGER NOT NULL,
+          points_source TEXT NOT NULL,
+          transaction_id TEXT,
+          contribution_id INTEGER,
+          achievement_id INTEGER,
+          challenge_id INTEGER,
+          timestamp TEXT NOT NULL,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (contribution_id) REFERENCES contributions (id),
+          FOREIGN KEY (achievement_id) REFERENCES achievements (id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE challenges (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          challenge_type TEXT NOT NULL,
+          target_value INTEGER NOT NULL,
+          target_unit TEXT NOT NULL,
+          points_reward INTEGER NOT NULL,
+          start_date TEXT NOT NULL,
+          end_date TEXT NOT NULL,
+          is_active INTEGER NOT NULL DEFAULT 1,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE challenge_progress (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          challenge_id INTEGER NOT NULL,
+          current_progress INTEGER NOT NULL DEFAULT 0,
+          is_completed INTEGER NOT NULL DEFAULT 0,
+          completion_date TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          FOREIGN KEY (challenge_id) REFERENCES challenges (id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE leaderboard_entries (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          leaderboard_type TEXT NOT NULL,
+          score REAL NOT NULL,
+          ranking INTEGER NOT NULL,
+          period_start TEXT NOT NULL,
+          period_end TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE notifications (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          message TEXT NOT NULL,
+          notification_type TEXT NOT NULL,
+          is_read INTEGER NOT NULL DEFAULT 0,
+          related_id INTEGER,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+      ''');
+  
+      await db.execute('''
+        CREATE TABLE user_achievement_progress (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          achievement_id INTEGER NOT NULL,
+          current_progress INTEGER NOT NULL DEFAULT 0,
+          target_value INTEGER NOT NULL,
+          is_completed INTEGER NOT NULL DEFAULT 0,
+          completed_at TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          UNIQUE(user_id, achievement_id)
+        )
+      ''');
+    }
+    
+    if (oldVersion < 5) {
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 5');
+      
+      // Create notification preferences table
+      await db.execute('''
+        CREATE TABLE notification_preferences (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          achievements_enabled INTEGER NOT NULL DEFAULT 1,
+          challenges_enabled INTEGER NOT NULL DEFAULT 1,
+          leaderboard_enabled INTEGER NOT NULL DEFAULT 1,
+          level_up_enabled INTEGER NOT NULL DEFAULT 1,
+          badge_enabled INTEGER NOT NULL DEFAULT 1,
+          reminder_enabled INTEGER NOT NULL DEFAULT 1,
+          daily_limit INTEGER NOT NULL DEFAULT 10,
+          quiet_hours_start TEXT DEFAULT '22:00',
+          quiet_hours_end TEXT DEFAULT '07:00',
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id),
+          UNIQUE(user_id)
+        )
+      ''');
+    }
   }
 
   Future<Balance> getBalance() async {
@@ -216,7 +473,6 @@ class DatabaseHelper {
   }
 
   Future<void> reloadBalance(double amount) async {
-    final db = await database;
     final currentBalance = await getBalance();
 
     final updatedBalance = Balance(
@@ -340,7 +596,13 @@ class DatabaseHelper {
       return User.fromMap(maps.first);
     }
     // Create a default user if none exists
-    final defaultUser = User(id: 1, name: 'Default User', ecopayOptIn: false);
+    final defaultUser = User(
+      id: 1,
+      name: 'Default User',
+      username: 'default_user',
+      email: 'default@example.com',
+      ecopayOptIn: false
+    );
     await insertUser(defaultUser);
     return defaultUser;
   }
@@ -536,5 +798,449 @@ class DatabaseHelper {
     for (final contribution in sampleContributions) {
       await db.insert('contributions', contribution);
     }
+  }
+
+  // Achievement methods
+  Future<List<Map<String, dynamic>>> getUserAchievements(int userId) async {
+    final db = await database;
+    return await db.query(
+      'user_achievements',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  Future<int> insertUserAchievement(Map<String, dynamic> achievement) async {
+    final db = await database;
+    return await db.insert('user_achievements', achievement);
+  }
+
+  // Gamification-related methods
+  Future<int> addUserPoints(int userId, int points, String source, {String? transactionId, int? contributionId, int? achievementId, int? challengeId}) async {
+    final db = await database;
+    
+    // Insert points record
+    await db.insert('user_points', {
+      'user_id': userId,
+      'points_earned': points,
+      'points_source': source,
+      'transaction_id': transactionId,
+      'contribution_id': contributionId,
+      'achievement_id': achievementId,
+      'challenge_id': challengeId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+    
+    // Update user's total points
+    await db.rawUpdate(
+      'UPDATE users SET total_points = total_points + ? WHERE id = ?',
+      [points, userId]
+    );
+    
+    return points;
+  }
+
+  Future<int> getUserTotalPoints(int userId) async {
+    final db = await database;
+    final result = await db.query(
+      'users',
+      columns: ['total_points'],
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+    return result.isNotEmpty ? result.first['total_points'] as int : 0;
+  }
+
+  Future<List<Map<String, dynamic>>> getUserPointsHistory(int userId) async {
+    final db = await database;
+    return await db.query(
+      'user_points',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'timestamp DESC',
+    );
+  }
+
+  Future<int> insertChallenge(Map<String, dynamic> challenge) async {
+    final db = await database;
+    return await db.insert('challenges', challenge);
+  }
+
+  Future<List<Map<String, dynamic>>> getActiveChallenges() async {
+    final db = await database;
+    return await db.query(
+      'challenges',
+      where: 'is_active = ? AND end_date > ?',
+      whereArgs: [1, DateTime.now().toIso8601String()],
+      orderBy: 'start_date ASC',
+    );
+  }
+
+  Future<int> updateChallengeProgress(int userId, int challengeId, int progress) async {
+    final db = await database;
+    return await db.update(
+      'challenge_progress',
+      {
+        'current_progress': progress,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'user_id = ? AND challenge_id = ?',
+      whereArgs: [userId, challengeId],
+    );
+  }
+
+  Future<int> insertChallengeProgress(Map<String, dynamic> progress) async {
+    final db = await database;
+    return await db.insert('challenge_progress', progress);
+  }
+
+  Future<List<Map<String, dynamic>>> getUserChallengeProgress(int userId) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT cp.*, c.title, c.description, c.target_value, c.target_unit, c.points_reward, c.end_date
+      FROM challenge_progress cp
+      JOIN challenges c ON cp.challenge_id = c.id
+      WHERE cp.user_id = ? AND c.is_active = 1
+      ORDER BY c.end_date ASC
+    ''', [userId]);
+  }
+
+  Future<int> insertLeaderboardEntry(Map<String, dynamic> entry) async {
+    final db = await database;
+    return await db.insert('leaderboard_entries', entry);
+  }
+
+  Future<List<Map<String, dynamic>>> getLeaderboard(String type, String periodStart, String periodEnd) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT le.*, u.name, u.profile_image
+      FROM leaderboard_entries le
+      JOIN users u ON le.user_id = u.id
+      WHERE le.leaderboard_type = ? AND le.period_start = ? AND le.period_end = ?
+      ORDER BY le.ranking ASC
+    ''', [type, periodStart, periodEnd]);
+  }
+
+  Future<int> insertNotification(Map<String, dynamic> notification) async {
+    final db = await database;
+    return await db.insert('notifications', notification);
+  }
+
+  Future<List<Map<String, dynamic>>> getUserNotifications(int userId) async {
+    final db = await database;
+    return await db.query(
+      'notifications',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<int> markNotificationAsRead(int notificationId) async {
+    final db = await database;
+    return await db.update(
+      'notifications',
+      {'is_read': 1},
+      where: 'id = ?',
+      whereArgs: [notificationId],
+    );
+  }
+
+  // Method to get or create challenge progress
+  Future<Map<String, dynamic>?> getChallengeProgress(int userId, int challengeId) async {
+    final db = await database;
+    final result = await db.query(
+      'challenge_progress',
+      where: 'user_id = ? AND challenge_id = ?',
+      whereArgs: [userId, challengeId],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  // Method to complete a challenge
+  Future<int> completeChallenge(int userId, int challengeId) async {
+    final db = await database;
+    return await db.update(
+      'challenge_progress',
+      {
+        'is_completed': 1,
+        'completion_date': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'user_id = ? AND challenge_id = ?',
+      whereArgs: [userId, challengeId],
+    );
+  }
+
+  // Method to update user level
+  Future<int> updateUserLevel(int userId, int level) async {
+    final db = await database;
+    return await db.update(
+      'users',
+      {'level': level},
+      where: 'id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  // Method to add badge to user
+  Future<int> addBadgeToUser(int userId, String badgeId) async {
+    final db = await database;
+    final user = await getUser(userId);
+    if (user != null) {
+      List<String> badges = user.badgesEarned?.split(',') ?? [];
+      if (!badges.contains(badgeId)) {
+        badges.add(badgeId);
+        return await db.update(
+          'users',
+          {'badges_earned': badges.join(',')},
+          where: 'id = ?',
+          whereArgs: [userId],
+        );
+      }
+    }
+    return 0;
+  }
+
+  // Achievement progress methods
+  Future<int> insertUserAchievementProgress(Map<String, dynamic> progress) async {
+    final db = await database;
+    return await db.insert('user_achievement_progress', progress, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Map<String, dynamic>?> getUserAchievementProgress(int userId, int achievementId) async {
+    final db = await database;
+    final result = await db.query(
+      'user_achievement_progress',
+      where: 'user_id = ? AND achievement_id = ?',
+      whereArgs: [userId, achievementId],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  Future<List<Map<String, dynamic>>> getAllUserAchievementProgress(int userId) async {
+    final db = await database;
+    return await db.query(
+      'user_achievement_progress',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<int> updateUserAchievementProgress(int userId, int achievementId, int currentProgress) async {
+    final db = await database;
+    return await db.update(
+      'user_achievement_progress',
+      {
+        'current_progress': currentProgress,
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'user_id = ? AND achievement_id = ?',
+      whereArgs: [userId, achievementId],
+    );
+  }
+
+  Future<int> completeUserAchievement(int userId, int achievementId) async {
+    final db = await database;
+    return await db.update(
+      'user_achievement_progress',
+      {
+        'is_completed': 1,
+        'completed_at': DateTime.now().toIso8601String(),
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      where: 'user_id = ? AND achievement_id = ?',
+      whereArgs: [userId, achievementId],
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getCompletedAchievements(int userId) async {
+    final db = await database;
+    return await db.query(
+      'user_achievement_progress',
+      where: 'user_id = ? AND is_completed = 1',
+      whereArgs: [userId],
+      orderBy: 'completed_at DESC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getInProgressAchievements(int userId) async {
+    final db = await database;
+    return await db.query(
+      'user_achievement_progress',
+      where: 'user_id = ? AND is_completed = 0',
+      whereArgs: [userId],
+      orderBy: 'current_progress DESC',
+    );
+  }
+
+  Future<Map<String, dynamic>> getAchievementStatistics(int userId) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT
+        COUNT(*) as total_achievements,
+        SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed_achievements,
+        SUM(CASE WHEN is_completed = 0 THEN 1 ELSE 0 END) as in_progress_achievements,
+        AVG(CASE WHEN is_completed = 0 THEN (current_progress * 100.0 / target_value) ELSE NULL END) as average_progress
+      FROM user_achievement_progress
+      WHERE user_id = ?
+    ''', [userId]);
+    
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return {
+      'total_achievements': 0,
+      'completed_achievements': 0,
+      'in_progress_achievements': 0,
+      'average_progress': 0.0,
+    };
+  }
+
+  // Notification Preferences methods
+  Future<int> insertNotificationPreferences(Map<String, dynamic> preferences) async {
+    final db = await database;
+    return await db.insert('notification_preferences', preferences, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<Map<String, dynamic>?> getNotificationPreferences(int userId) async {
+    final db = await database;
+    final result = await db.query(
+      'notification_preferences',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+    return result.isNotEmpty ? result.first : null;
+  }
+
+  Future<int> updateNotificationPreferences(int userId, Map<String, dynamic> preferences) async {
+    final db = await database;
+    return await db.update(
+      'notification_preferences',
+      preferences,
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  Future<int> deleteNotificationPreferences(int userId) async {
+    final db = await database;
+    return await db.delete(
+      'notification_preferences',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  // Enhanced notification methods
+  Future<List<Map<String, dynamic>>> getUnreadNotifications(int userId) async {
+    final db = await database;
+    return await db.query(
+      'notifications',
+      where: 'user_id = ? AND is_read = 0',
+      whereArgs: [userId],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<int> getUnreadNotificationCount(int userId) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT COUNT(*) as count
+      FROM notifications
+      WHERE user_id = ? AND is_read = 0
+    ''', [userId]);
+    return result.isNotEmpty ? result.first['count'] as int : 0;
+  }
+
+  Future<List<Map<String, dynamic>>> getNotificationsByType(int userId, String type) async {
+    final db = await database;
+    return await db.query(
+      'notifications',
+      where: 'user_id = ? AND notification_type = ?',
+      whereArgs: [userId, type],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<int> markAllNotificationsAsRead(int userId) async {
+    final db = await database;
+    return await db.update(
+      'notifications',
+      {'is_read': 1},
+      where: 'user_id = ?',
+      whereArgs: [userId],
+    );
+  }
+
+  Future<int> deleteNotification(int notificationId) async {
+    final db = await database;
+    return await db.delete(
+      'notifications',
+      where: 'id = ?',
+      whereArgs: [notificationId],
+    );
+  }
+
+  Future<int> deleteOldNotifications(int userId, DateTime cutoffDate) async {
+    final db = await database;
+    return await db.delete(
+      'notifications',
+      where: 'user_id = ? AND created_at < ?',
+      whereArgs: [userId, cutoffDate.toIso8601String()],
+    );
+  }
+
+  Future<Map<String, dynamic>> getNotificationStatistics(int userId) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT
+        COUNT(*) as total_notifications,
+        SUM(CASE WHEN is_read = 1 THEN 1 ELSE 0 END) as read_notifications,
+        SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END) as unread_notifications,
+        COUNT(DISTINCT notification_type) as notification_types
+      FROM notifications
+      WHERE user_id = ?
+    ''', [userId]);
+    
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return {
+      'total_notifications': 0,
+      'read_notifications': 0,
+      'unread_notifications': 0,
+      'notification_types': 0,
+    };
+  }
+
+  Future<List<Map<String, dynamic>>> getNotificationsByDateRange(
+    int userId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final db = await database;
+    return await db.query(
+      'notifications',
+      where: 'user_id = ? AND created_at >= ? AND created_at <= ?',
+      whereArgs: [userId, startDate.toIso8601String(), endDate.toIso8601String()],
+      orderBy: 'created_at DESC',
+    );
+  }
+
+  Future<List<Map<String, dynamic>>> getNotificationTypeStats(int userId) async {
+    final db = await database;
+    return await db.rawQuery('''
+      SELECT
+        notification_type,
+        COUNT(*) as count,
+        SUM(CASE WHEN is_read = 1 THEN 1 ELSE 0 END) as read_count,
+        SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END) as unread_count
+      FROM notifications
+      WHERE user_id = ?
+      GROUP BY notification_type
+      ORDER BY count DESC
+    ''', [userId]);
   }
 }

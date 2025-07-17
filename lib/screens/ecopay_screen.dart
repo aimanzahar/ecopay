@@ -61,6 +61,8 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       final updatedUser = User(
         id: _user!.id,
         name: _user!.name,
+        username: _user!.username,
+        email: _user!.email,
         ecopayOptIn: value,
       );
       await _databaseHelper.updateUser(updatedUser);
@@ -103,6 +105,8 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
                         _buildHeader(),
                         const SizedBox(height: 20),
                         _buildESGFeatures(),
+                        const SizedBox(height: 20),
+                        _buildGamificationFeatures(),
                         const SizedBox(height: 30),
                         _buildCarbonTracker(),
                         const SizedBox(height: 30),
@@ -323,6 +327,95 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildGamificationFeatures() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Gamification Features', style: _sectionTitleStyle()),
+          const SizedBox(height: 15),
+          _buildGamificationFeatureCard(
+            'Leaderboard',
+            'See how you rank against other users',
+            Colors.amber.shade50,
+            Icons.leaderboard,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildGamificationFeatureCard(
+            'Challenges',
+            'Complete challenges to earn points',
+            Colors.lightBlue.shade50,
+            Icons.flag,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ChallengesScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
+          _buildGamificationFeatureCard(
+            'Achievements',
+            'Unlock achievements for your contributions',
+            Colors.purple.shade50,
+            Icons.workspace_premium,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AchievementsScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGamificationFeatureCard(String title, String description, Color bgColor, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.shade200),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: Colors.green.shade600, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: _cardTitleStyle()),
+                  const SizedBox(height: 4),
+                  Text(description, style: _cardDescStyle()),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Colors.green, size: 16),
+          ],
+        ),
       ),
     );
   }
