@@ -89,6 +89,16 @@ flowchart TD
 
 ## 📱 Screenshots
 
+---
+
+### 🧭 EcoPay Integration
+<p float="left">
+  <img src="assets/readme_img/Touchngo.png" width="300" alt="Touch ‘n Go Integration Preview"/>
+</p>
+
+
+---
+
 ### 🔷 Dashboard Views
 <p float="left">
   <img src="assets/readme_img/dashboard1.png" width="300" alt="Dashboard View 1"/>
@@ -100,9 +110,10 @@ flowchart TD
 ### 🔍 QR Scan Flow
 <p float="left">
   <img src="assets/readme_img/scan_qr.png" width="300" alt="Scan QR"/>
+  <img src="assets/readme_img/after_scan_qr.png" width="300" alt="Post Scan"/>
   <img src="assets/readme_img/info_qr.png" width="300" alt="QR Info"/>
   <img src="assets/readme_img/info_qr_2.png" width="300" alt="QR Info 2"/>
-  <img src="assets/readme_img/after_scan_qr.png" width="300" alt="Post Scan"/>
+  
 </p>
 
 ---
@@ -119,15 +130,7 @@ flowchart TD
   <img src="assets/readme_img/history.png" width="300" alt="History Screen"/>
 </p>
 
----
 
-### 🧭 EcoPay Integration
-<p float="left">
-  <img src="assets/readme_img/Touchngo.png" width="300" alt="Touch ‘n Go Integration Preview"/>
-</p>
-
-
----
 
 ## 🛠️ Getting Started
 
