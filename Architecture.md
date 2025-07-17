@@ -1,67 +1,48 @@
-```mermaid
-flowchart TD
-  %% User Device Layer
-  subgraph A["📱 User Device"]
-    direction TB
-    A1[👤 User]
-    A2["TnG eWallet App"]
-    A3["EcoPay SDK"]
-    A1 -->|"Launch Wallet"| A2
-    A2 -->|"Triggers Payment"| A3
-  end
+graph TD
+    subgraph A["📱 User Device"]
+        A1[User] --> A2["TnG eWallet App"];
+        A1 --> A2_Future_1["Boost eWallet App (Future)"];
+        A1 --> A2_Future_2["GrabPay eWallet App (Future)"];
+        A2 --> A3["EcoPay SDK"];
+        A2_Future_1 --> A3;
+        A2_Future_2 --> A3;
+    end
 
-  %% EcoPay SDK Modules
-  subgraph B["💡 EcoPay SDK (Frontend Modules)"]
-    direction LR
-    B1["CO₂ Estimator\n(Local or Cached)"]
-    B2["UI Display\n(Impact Tags, Tree, Badges)"]
-    B3["Donation Prompt\n(Round-Up Overlay)"]
-    B4["Gamification Logic\n(Progress, Streaks)"]
-    B5["AI Chatbot\n(Eco Help Assistant)"]
-    B6["API Client\n(Sync to Backend)"]
-    
-    A3 --> B1
-    A3 --> B2
-    A3 --> B3
-    A3 --> B4
-    A3 --> B5
-    A3 --> B6
-  end
+    subgraph B["💡 EcoPay SDK"]
+        A3 --> B1["CO₂ Estimator"];
+        A3 --> B2["Gamification & UI"];
+        A3 --> B3["Donation Prompt"];
+        A3 --> B4["QR Scanner"];
+        A3 --> B5["API Client (Future)"];
+    end
 
-  %% Backend Core
-  subgraph C["☁️ EcoPay Backend (Cloud Services)"]
-    direction TB
-    C1["User Auth & Session Manager"]
-    C2["Carbon Engine\n(Backend Calculator, History)"]
-    C3["Gamification Engine\n(Streaks, Leaderboards)"]
-    C4["Donation Logic\n(Round-Up Handling, Matching)"]
-    C5["Notification Engine\n(FOMO Nudges, Rewards)"]
+    subgraph C["⚙️ Backend & Database (Local)"]
+        B1 --> C1["Environmental Impact Calculator"];
+        B2 --> C2["Gamification Helper"];
+        B3 --> C3["Database Helper (sqflite)"];
+        B4 --> C4["DuitNow QR Parser"];
+        C1 --> C3;
+        C2 --> C3;
+        C4 --> C3;
+    end
 
-    B6 --> C1
-    B6 --> C2
-    B6 --> C3
-    B6 --> C4
-    B6 --> C5
-  end
+    subgraph D["☁️ Cloud Backend (Future)"]
+        B5 --> D1["User Auth"];
+        B5 --> D2["Carbon Engine"];
+        B5 --> D3["Gamification Engine"];
+        B5 --> D4["Donation Logic"];
+        B5 --> D5["Notification Engine"];
+    end
 
-  %% Backend Storage
-  subgraph D["🗄️ Databases"]
-    D1["User DB\n(Account Info, Settings)"]
-    D2["Metrics DB\n(CO₂, Rewards, Donations)"]
-    
-    C1 --> D1
-    C2 --> D2
-    C3 --> D2
-    C4 --> D2
-  end
+    subgraph E["🗄️ Databases (Future)"]
+        D1 --> E1["User DB"];
+        D2 --> E2["Metrics DB"];
+        D3 --> E2;
+        D4 --> E2;
+    end
 
-  %% Third-Party APIs
-  subgraph E["🔌 Third-Party Integrations"]
-    E1["Climatiq API\n(Carbon Emission Factors)"]
-    E2["TnG Payment API\n(Round-Up Donations)"]
-    E3["Push Notification Service\n(e.g. Firebase)"]
-    
-    C2 -->|"Fetch Carbon Data"| E1
-    C4 -->|"Execute Donation"| E2
-    C5 -->|"Send Alerts"| E3
-  end
+    subgraph F["🔌 Third-Party APIs (Future)"]
+        D2 --> F1["Climatiq API"];
+        D4 --> F2["TnG Payment API"];
+        D5 --> F3["Push Notification Service"];
+    end
