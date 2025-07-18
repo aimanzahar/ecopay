@@ -374,45 +374,81 @@ erDiagram
 ---
 
 ### 🧭 EcoPay Integration
-<p float="left">
-  <img src="assets/readme_img/Touchngo.png" width="300" alt="Touch ‘n Go Integration Preview"/>
-</p>
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/Touchngo.png" width="250"/><br/><sub>Touch ‘n Go Integration</sub></td>
+  </tr>
+</table>
 
 ---
 
 ### 🔷 Dashboard Views
-<p float="left">
-  <img src="assets/readme_img/dashboard1.png" width="300" alt="Dashboard View 1"/>
-  <img src="assets/readme_img/dashboard2.png" width="300" alt="Dashboard View 2"/>
-  <img src="assets/readme_img/dashboard3.png" width="300" alt="Dashboard View 2"/>
-</p>
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/dashboard1.png" width="180"/><br/><sub>Dashboard 1</sub></td>
+    <td align="center"><img src="assets/readme_img/dashboard2.png" width="180"/><br/><sub>Dashboard 2</sub></td>
+    <td align="center"><img src="assets/readme_img/dashboard3.png" width="180"/><br/><sub>Dashboard 3</sub></td>
+  </tr>
+</table>
 
 ---
 
 ### 🔍 QR Scan Flow
-<p float="left">
-  <img src="assets/readme_img/scan_qr.png" width="300" alt="Scan QR"/>
-  <img src="assets/readme_img/after_scan_qr.png" width="300" alt="Post Scan"/>
-  <img src="assets/readme_img/info_qr.png" width="300" alt="QR Info"/>
-  <img src="assets/readme_img/info_qr_2.png" width="300" alt="QR Info 2"/>
-</p>
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/scan_qr.png" width="180"/><br/><sub>Scan</sub></td>
+    <td align="center"><img src="assets/readme_img/after_scan_qr.png" width="180"/><br/><sub>After Scan</sub></td>
+    <td align="center"><img src="assets/readme_img/info_qr.png" width="180"/><br/><sub>QR Info 1</sub></td>
+    <td align="center"><img src="assets/readme_img/info_qr_2.png" width="180"/><br/><sub>QR Info 2</sub></td>
+  </tr>
+</table>
 
 ---
 
-### MyContribution page
+### 🔍 Redeem Page
 
-<p float="left">
-  <img src="assets/readme_img/contribution1.png" width="300" alt="Success Screen"/>
-</p>
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/redeem1.png" width="180"/><br/><sub>Redeem1</sub></td>
+    <td align="center"><img src="assets/readme_img/redeem2.png" width="180"/><br/><sub>Redeem2</sub></td>
+  </tr>
+</table>
 
 ---
 
+### 🌱 MyContribution Page
 
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/contribution1.png" width="250"/><br/><sub>My Contribution</sub></td>
+    <td align="center"><img src="assets/readme_img/contribution2.png" width="250"/><br/><sub>My Contribution2 </sub></td>
+  </tr>
+</table>
+
+---
+
+### ✅ Gamification
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/leaderboard.png" width="250"/><br/><sub>LeaderBoard</sub></td>
+    <td align="center"><img src="assets/readme_img/Challange.png" width="250"/><br/><sub>Challange</sub></td>
+    <td align="center"><img src="assets/readme_img/achievement.png" width="250"/><br/><sub>Achievement</sub></td>
+  </tr>
+</table>
+
+---
 
 ### ✅ Confirmation & Success
-<p float="left">
-  <img src="assets/readme_img/success.png" width="300" alt="Success Screen"/>
-</p>
+
+<table>
+  <tr>
+    <td align="center"><img src="assets/readme_img/success.png" width="250"/><br/><sub>Payment Success</sub></td>
+  </tr>
+</table>
 
 ---
 

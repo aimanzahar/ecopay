@@ -9,6 +9,7 @@ import 'local_projects_screen.dart';
 import 'transaction_history_screen.dart';
 import 'donation_history_screen.dart';
 import 'my_contribution_screen.dart';
+import 'redeem_screen.dart';
 
 // Color Scheme Constants
 const Color primaryGreen = Color(0xFF2E7D32); // Main green
@@ -36,7 +37,6 @@ class _EcoPayScreenState extends State<EcoPayScreen>
   late Animation<double> _scaleAnimation;
   final GlobalKey _scaffoldKey = GlobalKey();
   bool _initialPositionSet = false;
-
 
   @override
   void initState() {
@@ -112,7 +112,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
 
   @override
   Widget build(BuildContext context) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_initialPositionSet) {
         final size = MediaQuery.of(context).size;
         setState(() {
@@ -381,7 +381,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             child: _buildActionButton(
               'My Contribution',
               Icons.eco,
-              Colors.green,
+              Colors.white,
               () {
                 Navigator.push(
                   context,
@@ -397,7 +397,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             child: _buildActionButton(
               'History',
               Icons.history,
-              Colors.blue,
+              Colors.white,
               () {
                 Navigator.push(
                   context,
@@ -824,7 +824,14 @@ class _EcoPayScreenState extends State<EcoPayScreen>
               ),
               const SizedBox(width: 15),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const RedeemScreen(),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
@@ -1018,7 +1025,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 25),
-  
+
           // Highlights Grid
           Wrap(
             spacing: 10,
@@ -1031,7 +1038,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             ],
           ),
           const SizedBox(height: 30),
-  
+
           // Preview of what they’re missing
           Container(
             padding: const EdgeInsets.all(18),
@@ -1082,7 +1089,6 @@ class _EcoPayScreenState extends State<EcoPayScreen>
       ),
     );
   }
-
 }
 
 Widget _buildHighlightCard(IconData icon, String title) {
@@ -1141,15 +1147,8 @@ class _ImpactStatPreview extends StatelessWidget {
             color: primaryGreen,
           ),
         ),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: textSecondary,
-          ),
-        ),
+        Text(label, style: const TextStyle(fontSize: 12, color: textSecondary)),
       ],
     );
   }
 }
-
