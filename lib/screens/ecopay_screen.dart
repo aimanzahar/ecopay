@@ -34,6 +34,9 @@ class _EcoPayScreenState extends State<EcoPayScreen>
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  final GlobalKey _scaffoldKey = GlobalKey();
+  bool _initialPositionSet = false;
+
 
   @override
   void initState() {
@@ -105,8 +108,19 @@ class _EcoPayScreenState extends State<EcoPayScreen>
     }
   }
 
+  Offset _aiIconOffset = const Offset(300, 600);
+
   @override
   Widget build(BuildContext context) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_initialPositionSet) {
+        final size = MediaQuery.of(context).size;
+        setState(() {
+          _aiIconOffset = Offset(size.width - 80, size.height - 180);
+          _initialPositionSet = true;
+        });
+      }
+    });
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -126,15 +140,17 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         ),
         centerTitle: true,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildOptInSwitch(),
-                  if (_user?.ecopayOptIn ?? false)
-                    Column(
-                      children: [
+      // 2) Wrap in a Stack so we can overlay the AI icon:
+      body: Stack(
+        children: [
+          // Your existing content:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildOptInSwitch(),
+                      if (_user?.ecopayOptIn ?? false) ...[
                         _buildHeader(),
                         const SizedBox(height: 20),
                         _buildStatsVisualization(),
@@ -151,13 +167,95 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                         const SizedBox(height: 20),
                         _buildESGFeatures(),
                         const SizedBox(height: 20),
-                      ],
-                    )
-                  else
-                    _buildOptInMessage(),
-                ],
+                      ] else
+                        _buildOptInMessage(),
+                    ],
+                  ),
+                ),
+
+          // 3) The draggable AI icon overlay:
+          _buildDraggableAIIcon(),
+        ],
+      ),
+    );
+  }
+
+  // 4) Builds the draggable icon in its current position:
+  Widget _buildDraggableAIIcon() {
+    return Positioned(
+      left: _aiIconOffset.dx,
+      top: _aiIconOffset.dy,
+      child: Draggable(
+        feedback: _aiButton(), // shown while dragging
+        childWhenDragging: Opacity(opacity: 0.5, child: _aiButton()),
+        child: _aiButton(), // the icon at rest
+        onDragEnd: (details) {
+          setState(() {
+            final size = MediaQuery.of(context).size;
+            // keep it within screen bounds:
+            final dx = details.offset.dx.clamp(0.0, size.width - 56);
+            final dy = details.offset.dy.clamp(
+              kToolbarHeight, // beneath the AppBar
+              size.height - 56,
+            );
+            _aiIconOffset = Offset(dx, dy);
+          });
+        },
+      ),
+    );
+  }
+
+  // 5) The circular AI button:
+  Widget _aiButton() {
+    return GestureDetector(
+      onTap: _openChatBox,
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Color.fromARGB(255, 53, 40, 128),
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(blurRadius: 4, color: Colors.black26)],
+        ),
+        child: const Icon(Icons.android, color: Colors.white),
+      ),
+    );
+  }
+
+  // 6) Opens a simple chat dialog:
+  void _openChatBox() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Chat with AI'),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 300,
+          child: Column(
+            children: [
+              Expanded(
+                child: Container(
+                  // TODO: replace with your chat messages list
+                  alignment: Alignment.center,
+                  child: const Text('AI Chat goes here'),
+                ),
               ),
-            ),
+              TextField(
+                decoration: const InputDecoration(hintText: 'Type a message…'),
+                onSubmitted: (msg) {
+                  // TODO: handle sending message
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
