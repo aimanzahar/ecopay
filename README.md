@@ -172,6 +172,179 @@ graph TD
 ```
 ---
 
+---
+
+## 🧠 DataBase Structure
+```mermaid
+erDiagram
+  balance {
+    INTEGER id PK
+    REAL amount
+    TEXT lastUpdated
+  }
+
+  transactions {
+    INTEGER id PK
+    TEXT transactionId
+    TEXT merchantName
+    REAL amount
+    REAL remainingBalance
+    TEXT transactionDate
+    TEXT status
+    TEXT notes
+  }
+
+  users {
+    INTEGER id PK
+    TEXT name
+    INTEGER ecopay_opt_in
+    TEXT username
+    TEXT email
+    INTEGER total_points
+    INTEGER level
+    TEXT badges_earned
+    TEXT created_at
+    TEXT last_active
+  }
+
+  projects {
+    INTEGER id PK
+    TEXT name
+    TEXT description
+    REAL cost_per_unit
+    TEXT unit_label
+  }
+
+  contributions {
+    INTEGER id PK
+    INTEGER user_id FK
+    INTEGER project_id FK
+    REAL amount
+    TEXT transaction_id
+    TEXT timestamp
+  }
+
+  achievements {
+    INTEGER id PK
+    TEXT name
+    TEXT description
+    TEXT target
+  }
+
+  user_achievements {
+    INTEGER id PK
+    INTEGER user_id FK
+    INTEGER achievement_id FK
+    TEXT date_unlocked
+  }
+
+  user_points {
+    INTEGER id PK
+    INTEGER user_id FK
+    INTEGER points_earned
+    TEXT points_source
+    TEXT transaction_id
+    INTEGER contribution_id FK
+    INTEGER achievement_id FK
+    INTEGER challenge_id FK
+    TEXT timestamp
+  }
+
+  challenges {
+    INTEGER id PK
+    TEXT title
+    TEXT description
+    TEXT challenge_type
+    INTEGER target_value
+    TEXT target_unit
+    INTEGER points_reward
+    TEXT start_date
+    TEXT end_date
+    INTEGER is_active
+    TEXT created_at
+  }
+
+  challenge_progress {
+    INTEGER id PK
+    INTEGER user_id FK
+    INTEGER challenge_id FK
+    INTEGER current_progress
+    INTEGER is_completed
+    TEXT completion_date
+    TEXT created_at
+    TEXT updated_at
+  }
+
+  leaderboard_entries {
+    INTEGER id PK
+    INTEGER user_id FK
+    TEXT leaderboard_type
+    REAL score
+    INTEGER ranking
+    TEXT period_start
+    TEXT period_end
+    TEXT created_at
+    TEXT updated_at
+  }
+
+  notifications {
+    INTEGER id PK
+    INTEGER user_id FK
+    TEXT title
+    TEXT message
+    TEXT notification_type
+    INTEGER is_read
+    INTEGER related_id
+    TEXT created_at
+  }
+
+  notification_preferences {
+    INTEGER id PK
+    INTEGER user_id FK
+    INTEGER achievements_enabled
+    INTEGER challenges_enabled
+    INTEGER leaderboard_enabled
+    INTEGER level_up_enabled
+    INTEGER badge_enabled
+    INTEGER reminder_enabled
+    INTEGER daily_limit
+    TEXT quiet_hours_start
+    TEXT quiet_hours_end
+    TEXT created_at
+    TEXT updated_at
+  }
+
+  user_achievement_progress {
+    INTEGER id PK
+    INTEGER user_id FK
+    INTEGER achievement_id FK
+    INTEGER current_progress
+    INTEGER target_value
+    INTEGER is_completed
+    TEXT completed_at
+    TEXT created_at
+    TEXT updated_at
+  }
+
+  contributions ||--o{ users : "user_id"
+  contributions ||--o{ projects : "project_id"
+  user_achievements ||--o{ users : "user_id"
+  user_achievements ||--o{ achievements : "achievement_id"
+  user_points ||--o{ users : "user_id"
+  user_points ||--o{ contributions : "contribution_id"
+  user_points ||--o{ achievements : "achievement_id"
+  user_points ||--o{ challenges : "challenge_id"
+  challenge_progress ||--o{ users : "user_id"
+  challenge_progress ||--o{ challenges : "challenge_id"
+  leaderboard_entries ||--o{ users : "user_id"
+  notifications ||--o{ users : "user_id"
+  notification_preferences ||--o{ users : "user_id"
+  user_achievement_progress ||--o{ users : "user_id"
+  user_achievement_progress ||--o{ achievements : "achievement_id"
+
+```
+---
+
 ## 🔩 Modules Overview
 
 ### `main.dart`
