@@ -21,6 +21,34 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<Set<String>> getColumns(Database db, String tableName) async {
+    final result = await db.rawQuery('PRAGMA table_info($tableName)');
+    return result.map((row) => row['name'] as String).toSet();
+  }
+
+  Future<void> ensureUserSchema(Database db) async {
+    await addColumnIfNotExists(db, 'users', 'username', 'TEXT');
+    await addColumnIfNotExists(db, 'users', 'email', 'TEXT');
+    await addColumnIfNotExists(db, 'users', 'total_points', 'INTEGER', defaultValue: '0');
+    await addColumnIfNotExists(db, 'users', 'level', 'INTEGER', defaultValue: '1');
+    await addColumnIfNotExists(db, 'users', 'badges_earned', 'TEXT', defaultValue: "''");
+    await addColumnIfNotExists(db, 'users', 'created_at', 'TEXT');
+    await addColumnIfNotExists(db, 'users', 'last_active', 'TEXT');
+  }
+
+
+  Future<void> addColumnIfNotExists(Database db, String table, String column, String type, {String? defaultValue}) async {
+    final columns = await getColumns(db, table);
+    if (!columns.contains(column)) {
+      final def = (defaultValue != null) ? "DEFAULT $defaultValue" : "";
+      await db.execute("ALTER TABLE $table ADD COLUMN $column $type $def");
+      print('DEBUG: Column $column added to $table');
+    } else {
+      print('DEBUG: Column $column already exists in $table');
+    }
+  }
+
+
   Future<Database> _initDatabase() async {
     print('DEBUG: DatabaseHelper._initDatabase - Initializing database');
     // Initialize the database factory for web
@@ -466,19 +494,30 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 6) {
-      print(
-        'DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 6',
-      );
-      final columns = await db.rawQuery("PRAGMA table_info(users)");
-      final existing = columns.map((c) => c['name']).toSet();
-
-      if (!existing.contains('username')) {
-        await db.execute('ALTER TABLE users ADD COLUMN username TEXT');
+      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 6');
+    
+      Future<void> addColumnIfNotExists(String column, String type, {String? defaultValue}) async {
+        final cols = await db.rawQuery("PRAGMA table_info(users)");
+        final existing = cols.map((c) => c['name']?.toString()).toSet();
+        if (!existing.contains(column)) {
+          final def = (defaultValue != null) ? "DEFAULT $defaultValue" : "";
+          final query = "ALTER TABLE users ADD COLUMN $column $type $def";
+          print('DEBUG: Adding column: $query');
+          await db.execute(query);
+        } else {
+          print('DEBUG: Column $column already exists');
+        }
       }
-      if (!existing.contains('email')) {
-        await db.execute('ALTER TABLE users ADD COLUMN email TEXT');
-      }
+    
+      await addColumnIfNotExists('username', 'TEXT');
+      await addColumnIfNotExists('email', 'TEXT');
+      await addColumnIfNotExists('total_points', 'INTEGER', defaultValue: '0');
+      await addColumnIfNotExists('level', 'INTEGER', defaultValue: '1');
+      await addColumnIfNotExists('badges_earned', 'TEXT', defaultValue: "''");
+      await addColumnIfNotExists('created_at', 'TEXT');
+      await addColumnIfNotExists('last_active', 'TEXT');
     }
+
   }
 
   Future<Balance> getBalance() async {
@@ -629,6 +668,7 @@ class DatabaseHelper {
   // User methods
   Future<void> insertUser(User user) async {
     final db = await database;
+    await ensureUserSchema(db);
     await db.insert(
       'users',
       user.toMap(),
