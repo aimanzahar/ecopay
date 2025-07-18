@@ -34,6 +34,9 @@ class _EcoPayScreenState extends State<EcoPayScreen>
   bool _isLoading = true;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  final GlobalKey _scaffoldKey = GlobalKey();
+  bool _initialPositionSet = false;
+
 
   @override
   void initState() {
@@ -109,6 +112,15 @@ class _EcoPayScreenState extends State<EcoPayScreen>
 
   @override
   Widget build(BuildContext context) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_initialPositionSet) {
+        final size = MediaQuery.of(context).size;
+        setState(() {
+          _aiIconOffset = Offset(size.width - 80, size.height - 180);
+          _initialPositionSet = true;
+        });
+      }
+    });
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -201,7 +213,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: Color.fromARGB(255, 219, 32, 4),
+          color: Color.fromARGB(255, 53, 40, 128),
           shape: BoxShape.circle,
           boxShadow: [BoxShadow(blurRadius: 4, color: Colors.black26)],
         ),

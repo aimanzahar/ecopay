@@ -157,87 +157,131 @@ class _DonationHistoryScreenState extends State<DonationHistoryScreen> {
     );
   }
 
-  Widget _buildStatisticsCard() {
-    if (_statistics.isEmpty) return const SizedBox.shrink();
-    
-    final totalDonated = _statistics['total_donated'] as double? ?? 0.0;
-    final totalContributions = _statistics['total_contributions'] as int? ?? 0;
-    final projectsSupported = _statistics['projects_supported'] as int? ?? 0;
-    final aggregatedImpact = EnvironmentalImpactCalculator.getAggregatedImpact(
-      _contributions.map((c) => {'amount': c['amount']}).toList()
-    );
+Widget _buildStatisticsCard() {
+  if (_statistics.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green[600]!, Colors.green[400]!],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  final totalDonated = _statistics['total_donated'] as double? ?? 0.0;
+  final totalContributions = _statistics['total_contributions'] as int? ?? 0;
+  final projectsSupported = _statistics['projects_supported'] as int? ?? 0;
+  final aggregatedImpact = EnvironmentalImpactCalculator.getAggregatedImpact(
+    _contributions.map((c) => {'amount': c['amount']}).toList(),
+  );
+
+  return Container(
+    margin: const EdgeInsets.all(16),
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Color(0xFF66BB6A), Color(0xFF43A047)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.green.withOpacity(0.4),
+          blurRadius: 12,
+          offset: const Offset(0, 6),
         ),
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Environmental Impact',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: const [
+            Icon(Icons.emoji_nature, color: Colors.white, size: 28),
+            SizedBox(width: 10),
+            Text(
+              'Your Environmental Impact',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: _enhancedStatItem(
+                icon: Icons.account_balance_wallet,
+                value: 'RM${totalDonated.toStringAsFixed(2)}',
+                label: 'Total Donated',
+              ),
+            ),
+            Expanded(
+              child: _enhancedStatItem(
+                icon: Icons.eco,
+                value: '${aggregatedImpact['total_co2_offset_kg'].toStringAsFixed(1)}kg',
+                label: 'CO₂ Offset',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _enhancedStatItem(
+                icon: Icons.volunteer_activism,
+                value: '$totalContributions',
+                label: 'Contributions',
+              ),
+            ),
+            Expanded(
+              child: _enhancedStatItem(
+                icon: Icons.park,
+                value: '$projectsSupported',
+                label: 'Projects Supported',
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+  Widget _enhancedStatItem({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            shape: BoxShape.circle,
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  'RM${totalDonated.toStringAsFixed(2)}',
-                  'Total Donated',
-                  Icons.account_balance_wallet,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  '${aggregatedImpact['total_co2_offset_kg'].toStringAsFixed(1)}kg',
-                  'CO₂ Offset',
-                  Icons.eco,
-                ),
-              ),
-            ],
+          child: Icon(icon, size: 24, color: Colors.white),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatItem(
-                  '$totalContributions',
-                  'Contributions',
-                  Icons.volunteer_activism,
-                ),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  '$projectsSupported',
-                  'Projects Supported',
-                  Icons.park,
-                ),
-              ),
-            ],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.white70,
           ),
-        ],
-      ),
+          textAlign: TextAlign.center,
+        ),
+      ],
     );
   }
+
 
   Widget _buildStatItem(String value, String label, IconData icon) {
     return Container(
