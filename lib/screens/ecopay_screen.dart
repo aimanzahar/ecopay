@@ -17,22 +17,45 @@ class EcoPayScreen extends StatefulWidget {
   State<EcoPayScreen> createState() => _EcoPayScreenState();
 }
 
-class _EcoPayScreenState extends State<EcoPayScreen> {
+class _EcoPayScreenState extends State<EcoPayScreen>
+    with SingleTickerProviderStateMixin {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   User? _user;
   List<Contribution> _contributions = [];
   bool _isLoading = true;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _playAnimation() {
+    _animationController.forward().then((_) {
+      _animationController.reverse();
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh data when returning from other screens
     _loadData();
   }
 
@@ -40,10 +63,11 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
     setState(() {
       _isLoading = true;
     });
-    // Assuming user ID 1 for this example
     final user = await _databaseHelper.getUser(1);
     if (user != null) {
-      final contributions = await _databaseHelper.getContributionsByUser(user.id!);
+      final contributions = await _databaseHelper.getContributionsByUser(
+        user.id!,
+      );
       setState(() {
         _user = user;
         _contributions = contributions;
@@ -104,8 +128,10 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
                       children: [
                         _buildHeader(),
                         const SizedBox(height: 20),
-                        _buildESGFeatures(),
+                        _buildStatsVisualization(),
                         const SizedBox(height: 20),
+                        _buildActionButtons(),
+                        const SizedBox(height: 30),
                         _buildGamificationFeatures(),
                         const SizedBox(height: 30),
                         _buildCarbonTracker(),
@@ -113,6 +139,8 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
                         _buildGreenRewards(),
                         const SizedBox(height: 30),
                         _buildSustainabilityTips(),
+                        const SizedBox(height: 20),
+                        _buildESGFeatures(),
                         const SizedBox(height: 20),
                       ],
                     )
@@ -125,204 +153,35 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
   }
 
   Widget _buildHeader() {
-    final double totalDonated = _contributions.fold(0.0, (sum, item) => sum + item.amount);
-    final double co2Offset = totalDonated * 0.12; 
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.green.shade100, Colors.green.shade50],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Image.asset(
             'assets/images/EcoPayIconremovebg.png',
-            height: 120,
+            height: 60,
+            width: 60,
             fit: BoxFit.contain,
           ),
-          const SizedBox(height: 20),
-          Text(
-            '🌱 Welcome to EcoPay',
-            style: TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your sustainable payment solution',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.green.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '"Every ringgit you spend, the Earth thanks you 🌍"',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontStyle: FontStyle.italic,
-              fontSize: 14,
-              color: Colors.green.shade600,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard('${co2Offset.toStringAsFixed(1)}kg', 'CO₂ Saved', Colors.green.shade600, Icons.eco),
-              ),
-              const SizedBox(width: 15),
-              Expanded(
-                child: _buildStatCard('${_contributions.length}', 'Green Transactions', Colors.green.shade600, Icons.nature_people),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const MyContributionScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.eco, color: Colors.white),
-                  label: const Text('My Contribution', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const DonationHistoryScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.history, color: Colors.white),
-                  label: const Text('History', style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatCard(String value, String label, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.green.shade600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildESGFeatures() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('ESG Features', style: _sectionTitleStyle()),
-          const SizedBox(height: 15),
-          _buildFeatureCard('🌍 Environmental Impact', 'Track your carbon footprint and offset emissions', Colors.green.shade50, Icons.public),
-          const SizedBox(height: 12),
-          _buildFeatureCard('👥 Social Responsibility', 'Support local communities and social causes', Colors.blue.shade50, Icons.group),
-          const SizedBox(height: 12),
-          _buildFeatureCard('🏢 Corporate Governance', 'Transparent and ethical business practices', Colors.purple.shade50, Icons.business),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFeatureCard(String title, String description, Color bgColor, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: Colors.green.shade600, size: 24),
-          ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: _cardTitleStyle()),
+                Text(
+                  '🌱 Welcome to EcoPay',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text(description, style: _cardDescStyle()),
+                Text(
+                  'Your sustainable payment solution',
+                  style: TextStyle(fontSize: 14, color: Colors.green.shade600),
+                ),
               ],
             ),
           ),
@@ -331,91 +190,383 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
     );
   }
 
-  Widget _buildGamificationFeatures() {
+  Widget _buildStatsVisualization() {
+    final double totalDonated = _contributions.fold(
+      0.0,
+      (sum, item) => sum + item.amount,
+    );
+    final double co2Offset = totalDonated * 0.12;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Text('Gamification Features', style: _sectionTitleStyle()),
-          const SizedBox(height: 15),
-          _buildGamificationFeatureCard(
-            'Leaderboard',
-            'See how you rank against other users',
-            Colors.amber.shade50,
-            Icons.leaderboard,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
-              );
-            },
+          _buildStatVisual(
+            'CO₂ Saved',
+            '${co2Offset.toStringAsFixed(1)}kg',
+            Icons.eco,
+            Colors.green,
           ),
-          const SizedBox(height: 12),
-          _buildGamificationFeatureCard(
-            'Challenges',
-            'Complete challenges to earn points',
-            Colors.lightBlue.shade50,
-            Icons.flag,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ChallengesScreen()),
-              );
-            },
-          ),
-          const SizedBox(height: 12),
-          _buildGamificationFeatureCard(
-            'Achievements',
-            'Unlock achievements for your contributions',
-            Colors.purple.shade50,
-            Icons.workspace_premium,
-            () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AchievementsScreen()),
-              );
-            },
+          Container(height: 50, width: 1, color: Colors.green.shade200),
+          _buildStatVisual(
+            'Transactions',
+            '${_contributions.length}',
+            Icons.receipt,
+            Colors.blue,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildGamificationFeatureCard(String title, String description, Color bgColor, IconData icon, VoidCallback onTap) {
+  Widget _buildStatVisual(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          title,
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildActionButton(
+              'My Contribution',
+              Icons.eco,
+              Colors.green,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyContributionScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: _buildActionButton(
+              'History',
+              Icons.history,
+              Colors.blue,
+              () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const DonationHistoryScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    String text,
+    IconData icon,
+    Color color,
+    VoidCallback onPressed,
+  ) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color.withOpacity(0.1),
+        foregroundColor: color,
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+          side: BorderSide(color: color.withOpacity(0.3)),
+        ),
+      ),
+      // Row is the positional child argument
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            text,
+            style: TextStyle(fontWeight: FontWeight.w600, color: color),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildESGFeatures() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'ESG Features',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.green.shade700,
+            ),
+          ),
+        ),
+        const SizedBox(height: 15),
+        SizedBox(
+          height: 100,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            children: [
+              _buildESGFeatureItem(
+                'Environmental',
+                Icons.eco,
+                Colors.green,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LocalProjectsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 15),
+              _buildESGFeatureItem('Social', Icons.people, Colors.blue, () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LocalProjectsScreen(),
+                  ),
+                );
+              }),
+              const SizedBox(width: 15),
+              _buildESGFeatureItem(
+                'Governance',
+                Icons.business,
+                Colors.purple,
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LocalProjectsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildESGFeatureItem(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.green.shade200),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
+      child: SizedBox(
+        width: 100,
+        height: 100,
+        child: Container(
+          padding: const EdgeInsets.all(12), // Reduced padding
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(15),
+            border: Border.all(color: color.withOpacity(0.2)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 26, color: color), // Reduced icon size
+              const SizedBox(height: 6), // Reduced spacing
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11, // Reduced font size
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              child: Icon(icon, color: Colors.green.shade600, size: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGamificationFeatures() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Gamification',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.green.shade700,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: _cardTitleStyle()),
-                  const SizedBox(height: 4),
-                  Text(description, style: _cardDescStyle()),
-                ],
+          ),
+        ),
+        const SizedBox(height: 15),
+        SizedBox(
+          height: 120,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            children: [
+              _buildGamificationItem(
+                'Leaderboard',
+                Icons.leaderboard,
+                Colors.amber,
+                LeaderboardScreen(),
+              ),
+              const SizedBox(width: 15),
+              _buildGamificationItem(
+                'Challenges',
+                Icons.flag,
+                Colors.blue,
+                ChallengesScreen(),
+              ),
+              const SizedBox(width: 15),
+              _buildGamificationItem(
+                'Achievements',
+                Icons.workspace_premium,
+                Colors.purple,
+                AchievementsScreen(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGamificationItem(
+    String title,
+    IconData icon,
+    Color color,
+    Widget screen,
+  ) {
+    return GestureDetector(
+      onTap: () {
+        _playAnimation();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => screen),
+        );
+      },
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: SizedBox(
+              width: 100,
+              height: 120,
+              child: Container(
+                padding: const EdgeInsets.all(12), // Reduced padding
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [color.withOpacity(0.2), color.withOpacity(0.05)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10), // Reduced padding
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        icon,
+                        size: 24,
+                        color: color,
+                      ), // Reduced icon size
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 11, // Reduced font size
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.green, size: 16),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -425,40 +576,83 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [Colors.green.shade600, Colors.green.shade400]),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: const [
-              Icon(Icons.eco, color: Colors.white, size: 28),
-              SizedBox(width: 12),
-              Text(
-                'Carbon Footprint Tracker',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ],
+        gradient: LinearGradient(
+          colors: [Colors.teal.shade600, Colors.teal.shade400],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.teal.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text('This Month', style: TextStyle(fontSize: 14, color: Colors.white70)),
-                    SizedBox(height: 4),
-                    Text('12.3 kg CO₂', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-                    SizedBox(height: 8),
-                    Text('↓ 23% vs last month', style: TextStyle(fontSize: 12, color: Colors.white)),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.eco, color: Colors.white, size: 28),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Carbon Footprint',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              const Icon(Icons.local_florist, size: 80, color: Colors.white),
-            ],
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'This Month',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '12.3 kg CO₂',
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '↓ 23% vs last month',
+                            style: TextStyle(fontSize: 12, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
+          const SizedBox(width: 10),
+          const Icon(Icons.bar_chart, size: 60, color: Colors.white),
         ],
       ),
     );
@@ -467,66 +661,96 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
   Widget _buildGreenRewards() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Green Rewards', style: _sectionTitleStyle()),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Green Rewards',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green.shade700,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '1,247 pts',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 15),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.green.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.green.shade200),
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.green.shade100,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Text('🏆', style: TextStyle(fontSize: 24)),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Eco Points Available', style: _cardTitleStyle()),
-                          const SizedBox(height: 4),
-                          Text('1,247 points', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green.shade600)),
-                          const SizedBox(height: 8),
-                          const Text('Redeem for green products & services', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                        ],
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {},
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Redeem'),
-                    ),
-                  ],
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Redeem points for sustainable products & services',
+                  style: TextStyle(fontSize: 14, color: Colors.green.shade600),
                 ),
-                const SizedBox(height: 12),
-                LinearProgressIndicator(
-                  value: 1247 / 1500,
-                  color: Colors.green,
-                  backgroundColor: Colors.green.shade100,
+              ),
+              const SizedBox(width: 15),
+              ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '253 points left to next reward!',
-                  style: TextStyle(fontSize: 12, color: Colors.green.shade700, fontWeight: FontWeight.w600),
-                ),
-              ],
+                child: const Text('Redeem'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 15),
+          LinearProgressIndicator(
+            value: 1247 / 1500,
+            minHeight: 8,
+            color: Colors.green,
+            backgroundColor: Colors.green.shade100,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              '253 points to next reward',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.green.shade700,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],
@@ -537,46 +761,86 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
   Widget _buildSustainabilityTips() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.lightGreen.shade50,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Sustainability Tips', style: _sectionTitleStyle()),
+          Text(
+            'Sustainability Tips',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.green.shade700,
+            ),
+          ),
           const SizedBox(height: 15),
-          _buildTipCard('💡', 'Use digital receipts to save paper', 'Save up to 2.5kg CO₂ per year'),
+          _buildTipItem(
+            '💡',
+            'Use digital receipts',
+            'Save up to 2.5kg CO₂ per year',
+          ),
           const SizedBox(height: 12),
-          _buildTipCard('🚶‍♀️', 'Walk to nearby stores instead of driving', 'Reduce transport emissions by 65%'),
+          _buildTipItem(
+            '🚶‍♀️',
+            'Walk to nearby stores',
+            'Reduce transport emissions by 65%',
+          ),
           const SizedBox(height: 12),
-          _buildTipCard('♻️', 'Choose eco-friendly businesses', 'Support sustainable practices'),
+          _buildTipItem(
+            '♻️',
+            'Choose eco-friendly businesses',
+            'Support sustainable practices',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTipCard(String emoji, String title, String description) {
+  Widget _buildTipItem(String emoji, String title, String description) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.green.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 3)),
-        ],
+        borderRadius: BorderRadius.circular(15),
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Text(emoji, style: const TextStyle(fontSize: 20)),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: _cardTitleStyle()),
-                const SizedBox(height: 4),
-                Text(description, style: _cardDescStyle()),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.green.shade700,
+                  ),
+                ),
+                Text(
+                  description,
+                  style: TextStyle(fontSize: 13, color: Colors.green.shade600),
+                ),
               ],
             ),
           ),
@@ -588,58 +852,62 @@ class _EcoPayScreenState extends State<EcoPayScreen> {
   Widget _buildOptInSwitch() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Enable EcoPay',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade800,
+              ),
+            ),
+            Switch(
+              value: _user?.ecopayOptIn ?? false,
+              onChanged: (value) {
+                _updateOptInStatus(value);
+              },
+              activeColor: Colors.green,
+              activeTrackColor: Colors.green.shade300,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOptInMessage() {
+    return Container(
+      padding: const EdgeInsets.all(40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Enable EcoPay',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          Image.asset(
+            'assets/images/EcoPayIconremovebg.png',
+            height: 100,
+            fit: BoxFit.contain,
           ),
-          Switch(
-            value: _user?.ecopayOptIn ?? false,
-            onChanged: (value) {
-              _updateOptInStatus(value);
-            },
-            activeColor: Colors.green,
+          const SizedBox(height: 20),
+          const Text(
+            'Join EcoPay!',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Enable EcoPay to round up your transactions and contribute to environmental projects.',
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
-
-Widget _buildOptInMessage() {
-  return Container(
-    padding: const EdgeInsets.all(40),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Image.asset(
-          'assets/images/EcoPayIconremovebg.png',
-          height: 100,
-          fit: BoxFit.contain,
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'Join EcoPay!',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Enable EcoPay to round up your transactions and contribute to environmental projects.',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    ),
-  );
-}
-
-
-  TextStyle _sectionTitleStyle() => TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green.shade700);
-  TextStyle _cardTitleStyle() => TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green.shade700);
-  TextStyle _cardDescStyle() => TextStyle(fontSize: 14, color: Colors.green.shade600);
 }
