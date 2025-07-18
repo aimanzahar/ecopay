@@ -992,7 +992,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
 
   Widget _buildOptInMessage() {
     return Container(
-      padding: const EdgeInsets.all(40),
+      padding: const EdgeInsets.all(30),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1003,18 +1003,153 @@ class _EcoPayScreenState extends State<EcoPayScreen>
           ),
           const SizedBox(height: 20),
           const Text(
-            'Join EcoPay!',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            'Activate EcoPay',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: primaryGreen,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 10),
           const Text(
-            'Enable EcoPay to round up your transactions and contribute to environmental projects.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+            'Round up your payments to support verified green projects. Track your CO₂ savings, earn rewards, and join a sustainability-driven community!',
+            style: TextStyle(fontSize: 15, color: textSecondary),
             textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 25),
+  
+          // Highlights Grid
+          Wrap(
+            spacing: 10,
+            runSpacing: 12,
+            children: [
+              _buildHighlightCard(Icons.eco, "Save CO₂ Automatically"),
+              _buildHighlightCard(Icons.redeem, "Earn Green Rewards"),
+              _buildHighlightCard(Icons.group, "Join 12k+ Eco Users"),
+              _buildHighlightCard(Icons.verified, "Verified Impact"),
+            ],
+          ),
+          const SizedBox(height: 30),
+  
+          // Preview of what they’re missing
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.green.shade50,
+              borderRadius: BorderRadius.circular(15),
+              border: Border.all(color: Colors.green.shade100),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  "You're missing out on:",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.green.shade800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: const [
+                    _ImpactStatPreview(
+                      label: 'CO₂ Saved',
+                      value: '8.2 kg/mo',
+                      icon: Icons.cloud_done,
+                    ),
+                    _ImpactStatPreview(
+                      label: 'Green Points',
+                      value: '+120 pts',
+                      icon: Icons.stars,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Turn the switch ON to join the movement 🌍',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.green.shade700,
+            ),
           ),
         ],
       ),
     );
   }
+
 }
+
+Widget _buildHighlightCard(IconData icon, String title) {
+  return Container(
+    width: 150,
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.green.shade100),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.green.withOpacity(0.05),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: primaryGreen, size: 22),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ImpactStatPreview extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+
+  const _ImpactStatPreview({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(icon, color: primaryGreen, size: 28),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: primaryGreen,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
