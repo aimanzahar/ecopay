@@ -10,6 +10,15 @@ import 'transaction_history_screen.dart';
 import 'donation_history_screen.dart';
 import 'my_contribution_screen.dart';
 
+// Color Scheme Constants
+const Color primaryGreen = Color(0xFF2E7D32); // Main green
+const Color lightGreen = Color(0xFFA5D6A7); // Light green
+const Color darkGreen = Color(0xFF1B5E20); // Dark green
+const Color textPrimary = Color(0xFF263238); // Dark gray
+const Color textSecondary = Color(0xFF607D8B); // Gray-blue
+const Color accentBlue = Color(0xFF1976D2); // For secondary actions
+const Color accentAmber = Color(0xFFFFA000); // For highlights
+
 class EcoPayScreen extends StatefulWidget {
   const EcoPayScreen({super.key});
 
@@ -110,7 +119,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         title: const Text(
           'EcoPay',
           style: TextStyle(
-            color: Colors.green,
+            color: textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
@@ -201,7 +210,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: lightGreen.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -218,14 +227,14 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             'CO₂ Saved',
             '${co2Offset.toStringAsFixed(1)}kg',
             Icons.eco,
-            Colors.green,
+            primaryGreen,
           ),
           Container(height: 50, width: 1, color: Colors.green.shade200),
           _buildStatVisual(
             'Transactions',
             '${_contributions.length}',
             Icons.receipt,
-            Colors.blue,
+            accentBlue,
           ),
         ],
       ),
@@ -315,12 +324,12 @@ class _EcoPayScreenState extends State<EcoPayScreen>
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color.withOpacity(0.1),
-        foregroundColor: color,
+        backgroundColor: primaryGreen, // Changed
+        foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
-          side: BorderSide(color: color.withOpacity(0.3)),
+          side: BorderSide(color: primaryGreen.withOpacity(0.3)),
         ),
       ),
       // Row is the positional child argument
@@ -363,7 +372,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
               _buildESGFeatureItem(
                 'Environmental',
                 Icons.eco,
-                Colors.green,
+                primaryGreen,
                 () {
                   Navigator.push(
                     context,
@@ -374,7 +383,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                 },
               ),
               const SizedBox(width: 15),
-              _buildESGFeatureItem('Social', Icons.people, Colors.blue, () {
+              _buildESGFeatureItem('Social', Icons.people, accentBlue, () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -417,7 +426,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         child: Container(
           padding: const EdgeInsets.all(12), // Reduced padding
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
+            color: color.withOpacity(0.1),
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: color.withOpacity(0.2)),
           ),
@@ -470,14 +479,14 @@ class _EcoPayScreenState extends State<EcoPayScreen>
               _buildGamificationItem(
                 'Leaderboard',
                 Icons.leaderboard,
-                Colors.amber,
+                accentAmber,
                 LeaderboardScreen(),
               ),
               const SizedBox(width: 15),
               _buildGamificationItem(
                 'Challenges',
                 Icons.flag,
-                Colors.blue,
+                accentBlue,
                 ChallengesScreen(),
               ),
               const SizedBox(width: 15),
@@ -577,7 +586,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.teal.shade600, Colors.teal.shade400],
+          colors: [darkGreen, primaryGreen],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -663,7 +672,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
+        color: lightGreen.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -737,8 +746,8 @@ class _EcoPayScreenState extends State<EcoPayScreen>
           LinearProgressIndicator(
             value: 1247 / 1500,
             minHeight: 8,
-            color: Colors.green,
-            backgroundColor: Colors.green.shade100,
+            color: primaryGreen, // Changed
+            backgroundColor: lightGreen,
             borderRadius: BorderRadius.circular(10),
           ),
           const SizedBox(height: 8),
@@ -763,7 +772,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.lightGreen.shade50,
+        color: lightGreen.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -855,7 +864,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.green.shade50,
+          color: lightGreen.withOpacity(0.3),
           borderRadius: BorderRadius.circular(15),
         ),
         child: Row(
@@ -874,8 +883,8 @@ class _EcoPayScreenState extends State<EcoPayScreen>
               onChanged: (value) {
                 _updateOptInStatus(value);
               },
-              activeColor: Colors.green,
-              activeTrackColor: Colors.green.shade300,
+              activeColor: primaryGreen, // Changed
+              activeTrackColor: lightGreen,
             ),
           ],
         ),
