@@ -30,11 +30,18 @@ class DatabaseHelper {
 
     String path = join(await getDatabasesPath(), 'ecopay.db');
     print('DEBUG: DatabaseHelper._initDatabase - Database path: $path');
-    return await openDatabase(path, version: 5, onCreate: _createDatabase, onUpgrade: _onUpgrade);
+    return await openDatabase(
+      path,
+      version: 6,
+      onCreate: _createDatabase,
+      onUpgrade: _onUpgrade,
+    );
   }
 
   Future<void> _createDatabase(Database db, int version) async {
-    print('DEBUG: DatabaseHelper._createDatabase - Creating new database version: $version');
+    print(
+      'DEBUG: DatabaseHelper._createDatabase - Creating new database version: $version',
+    );
     await db.execute('''
       CREATE TABLE balance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -193,9 +200,13 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    print('DEBUG: DatabaseHelper._onUpgrade - Upgrading from version $oldVersion to $newVersion');
+    print(
+      'DEBUG: DatabaseHelper._onUpgrade - Upgrading from version $oldVersion to $newVersion',
+    );
     if (oldVersion < 2) {
-      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 2');
+      print(
+        'DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 2',
+      );
       await db.execute('''
         CREATE TABLE transactions (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -210,7 +221,9 @@ class DatabaseHelper {
       ''');
     }
     if (oldVersion < 3) {
-      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 3');
+      print(
+        'DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 3',
+      );
       await db.execute('''
         CREATE TABLE users (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -263,61 +276,74 @@ class DatabaseHelper {
         )
       ''');
     }
-    
+
     if (oldVersion < 4) {
-      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 4');
-      
+      print(
+        'DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 4',
+      );
+
       // Check current table structure before migration
       final tableInfo = await db.rawQuery("PRAGMA table_info(users)");
       print('DEBUG: Current users table structure: $tableInfo');
-      
+
       try {
         // Add new columns to users table
         print('DEBUG: Adding total_points column');
-        await db.execute('ALTER TABLE users ADD COLUMN total_points INTEGER NOT NULL DEFAULT 0');
-        
+        await db.execute(
+          'ALTER TABLE users ADD COLUMN total_points INTEGER NOT NULL DEFAULT 0',
+        );
+
         print('DEBUG: Adding level column');
-        await db.execute('ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 1');
-        
+        await db.execute(
+          'ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 1',
+        );
+
         print('DEBUG: Adding badges_earned column');
-        await db.execute('ALTER TABLE users ADD COLUMN badges_earned TEXT DEFAULT ""');
-        
+        await db.execute(
+          'ALTER TABLE users ADD COLUMN badges_earned TEXT DEFAULT ""',
+        );
+
         // FIXED: Multi-step approach for adding timestamp columns
         print('DEBUG: Adding created_at column using multi-step approach');
         try {
           // Step 1: Add column as nullable first
           await db.execute('ALTER TABLE users ADD COLUMN created_at TEXT');
-          
+
           // Step 2: Update existing rows with current timestamp
-          await db.execute("UPDATE users SET created_at = datetime('now') WHERE created_at IS NULL");
-          
+          await db.execute(
+            "UPDATE users SET created_at = datetime('now') WHERE created_at IS NULL",
+          );
+
           print('DEBUG: Successfully added created_at column');
         } catch (e) {
           print('ERROR: Failed to add created_at column: $e');
           rethrow;
         }
-        
+
         print('DEBUG: Adding last_active column using multi-step approach');
         try {
           // Step 1: Add column as nullable first
           await db.execute('ALTER TABLE users ADD COLUMN last_active TEXT');
-          
+
           // Step 2: Update existing rows with current timestamp
-          await db.execute("UPDATE users SET last_active = datetime('now') WHERE last_active IS NULL");
-          
+          await db.execute(
+            "UPDATE users SET last_active = datetime('now') WHERE last_active IS NULL",
+          );
+
           print('DEBUG: Successfully added last_active column');
         } catch (e) {
           print('ERROR: Failed to add last_active column: $e');
           rethrow;
         }
-        
       } catch (e) {
         print('ERROR: Migration failed at line ${e.toString()}');
         print('ERROR: This is the SQLite constraint error we\'re debugging');
-        print('ERROR: SQLite doesn\'t support non-constant defaults in ALTER TABLE ADD COLUMN with NOT NULL');
+        print(
+          'ERROR: SQLite doesn\'t support non-constant defaults in ALTER TABLE ADD COLUMN with NOT NULL',
+        );
         rethrow;
       }
-      
+
       // Create new gamification tables
       await db.execute('''
         CREATE TABLE user_points (
@@ -395,7 +421,7 @@ class DatabaseHelper {
           FOREIGN KEY (user_id) REFERENCES users (id)
         )
       ''');
-  
+
       await db.execute('''
         CREATE TABLE user_achievement_progress (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -412,10 +438,12 @@ class DatabaseHelper {
         )
       ''');
     }
-    
+
     if (oldVersion < 5) {
-      print('DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 5');
-      
+      print(
+        'DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 5',
+      );
+
       // Create notification preferences table
       await db.execute('''
         CREATE TABLE notification_preferences (
@@ -437,6 +465,20 @@ class DatabaseHelper {
         )
       ''');
     }
+    if (oldVersion < 6) {
+      print(
+        'DEBUG: DatabaseHelper._onUpgrade - Applying migration for version < 6',
+      );
+      final columns = await db.rawQuery("PRAGMA table_info(users)");
+      final existing = columns.map((c) => c['name']).toSet();
+
+      if (!existing.contains('username')) {
+        await db.execute('ALTER TABLE users ADD COLUMN username TEXT');
+      }
+      if (!existing.contains('email')) {
+        await db.execute('ALTER TABLE users ADD COLUMN email TEXT');
+      }
+    }
   }
 
   Future<Balance> getBalance() async {
@@ -446,11 +488,15 @@ class DatabaseHelper {
 
     if (maps.isNotEmpty) {
       final balance = Balance.fromMap(maps.first);
-      print('DEBUG: DatabaseHelper.getBalance - Retrieved balance: ${balance.amount}');
+      print(
+        'DEBUG: DatabaseHelper.getBalance - Retrieved balance: ${balance.amount}',
+      );
       return balance;
     } else {
       // If no balance exists, create a default one
-      print('DEBUG: DatabaseHelper.getBalance - No balance found, creating default');
+      print(
+        'DEBUG: DatabaseHelper.getBalance - No balance found, creating default',
+      );
       final newBalance = Balance(amount: 76.54, lastUpdated: DateTime.now());
       await insertBalance(newBalance);
       return newBalance;
@@ -501,14 +547,16 @@ class DatabaseHelper {
     });
   }
 
-  Future<AppTransaction.Transaction?> getTransactionById(String transactionId) async {
+  Future<AppTransaction.Transaction?> getTransactionById(
+    String transactionId,
+  ) async {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
       where: 'transactionId = ?',
       whereArgs: [transactionId],
     );
-    
+
     if (maps.isNotEmpty) {
       return AppTransaction.Transaction.fromMap(maps.first);
     }
@@ -518,26 +566,26 @@ class DatabaseHelper {
   Future<bool> processPayment(String merchantName, double amount) async {
     print('DEBUG: DatabaseHelper.processPayment - Starting payment process');
     print('DEBUG: Merchant: $merchantName, Amount: $amount');
-    
+
     final db = await database;
-    
+
     // Check if balance is sufficient
     final currentBalance = await getBalance();
     print('DEBUG: Current balance before payment: ${currentBalance.amount}');
-    
+
     if (currentBalance.amount < amount) {
       print('DEBUG: Insufficient balance - payment failed');
       return false; // Insufficient balance
     }
-    
+
     // Calculate new balance
     final newBalance = currentBalance.amount - amount;
     print('DEBUG: New balance after payment: $newBalance');
-    
+
     // Generate transaction ID
     final transactionId = AppTransaction.Transaction.generateTransactionId();
     print('DEBUG: Generated transaction ID: $transactionId');
-    
+
     // Create transaction record
     final transaction = AppTransaction.Transaction(
       transactionId: transactionId,
@@ -547,25 +595,24 @@ class DatabaseHelper {
       transactionDate: DateTime.now(),
       status: 'completed',
     );
-    
+
     // Use database transaction to ensure atomicity
     await db.transaction((txn) async {
       // Update balance
       await txn.update(
         'balance',
-        {
-          'amount': newBalance,
-          'lastUpdated': DateTime.now().toIso8601String(),
-        },
+        {'amount': newBalance, 'lastUpdated': DateTime.now().toIso8601String()},
         where: 'id = ?',
         whereArgs: [currentBalance.id],
       );
-      
+
       // Insert transaction record
       await txn.insert('transactions', transaction.toMap());
     });
-    
-    print('DEBUG: Payment processed successfully - balance updated to: $newBalance');
+
+    print(
+      'DEBUG: Payment processed successfully - balance updated to: $newBalance',
+    );
     return true;
   }
 
@@ -582,7 +629,11 @@ class DatabaseHelper {
   // User methods
   Future<void> insertUser(User user) async {
     final db = await database;
-    await db.insert('users', user.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    await db.insert(
+      'users',
+      user.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<User?> getUser(int id) async {
@@ -601,7 +652,7 @@ class DatabaseHelper {
       name: 'Default User',
       username: 'default_user',
       email: 'default@example.com',
-      ecopayOptIn: false
+      ecopayOptIn: false,
     );
     await insertUser(defaultUser);
     return defaultUser;
@@ -637,9 +688,12 @@ class DatabaseHelper {
   }
 
   // Enhanced method to get contributions with project details
-  Future<List<Map<String, dynamic>>> getContributionsWithProjectDetails(int userId) async {
+  Future<List<Map<String, dynamic>>> getContributionsWithProjectDetails(
+    int userId,
+  ) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT
         c.id as contribution_id,
         c.user_id,
@@ -655,14 +709,17 @@ class DatabaseHelper {
       LEFT JOIN projects p ON c.project_id = p.id
       WHERE c.user_id = ?
       ORDER BY c.timestamp DESC
-    ''', [userId]);
+    ''',
+      [userId],
+    );
     return maps;
   }
 
   // Get contribution statistics for a user
   Future<Map<String, dynamic>> getContributionStatistics(int userId) async {
     final db = await database;
-    final List<Map<String, dynamic>> result = await db.rawQuery('''
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      '''
       SELECT
         COUNT(*) as total_contributions,
         SUM(amount) as total_donated,
@@ -671,8 +728,10 @@ class DatabaseHelper {
         MAX(timestamp) as latest_contribution
       FROM contributions
       WHERE user_id = ?
-    ''', [userId]);
-    
+    ''',
+      [userId],
+    );
+
     if (result.isNotEmpty) {
       return result.first;
     }
@@ -688,7 +747,8 @@ class DatabaseHelper {
   // Get monthly contribution data for charts
   Future<List<Map<String, dynamic>>> getMonthlyContributions(int userId) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      '''
       SELECT
         strftime('%Y-%m', timestamp) as month,
         COUNT(*) as contribution_count,
@@ -698,51 +758,56 @@ class DatabaseHelper {
       GROUP BY strftime('%Y-%m', timestamp)
       ORDER BY month DESC
       LIMIT 12
-    ''', [userId]);
+    ''',
+      [userId],
+    );
     return maps;
   }
 
   // Insert sample project data for testing
   Future<void> insertSampleProjects() async {
     final db = await database;
-    
+
     // Check if projects already exist
     final existing = await db.query('projects', limit: 1);
     if (existing.isNotEmpty) return;
-    
+
     final sampleProjects = [
       {
         'name': 'Mangrove Restoration',
-        'description': 'Plant mangrove trees in coastal areas to prevent erosion and support marine life',
+        'description':
+            'Plant mangrove trees in coastal areas to prevent erosion and support marine life',
         'cost_per_unit': 5.0,
-        'unit_label': 'tree'
+        'unit_label': 'tree',
       },
       {
         'name': 'Solar Panel Installation',
-        'description': 'Install solar panels in rural schools to provide clean energy',
+        'description':
+            'Install solar panels in rural schools to provide clean energy',
         'cost_per_unit': 25.0,
-        'unit_label': 'watt'
+        'unit_label': 'watt',
       },
       {
         'name': 'Clean Water Wells',
         'description': 'Build water filtration systems for rural communities',
         'cost_per_unit': 100.0,
-        'unit_label': 'system'
+        'unit_label': 'system',
       },
       {
         'name': 'Rainforest Conservation',
-        'description': 'Protect endangered rainforest areas and wildlife habitats',
+        'description':
+            'Protect endangered rainforest areas and wildlife habitats',
         'cost_per_unit': 10.0,
-        'unit_label': 'sq meter'
+        'unit_label': 'sq meter',
       },
       {
         'name': 'Ocean Cleanup',
         'description': 'Remove plastic waste from oceans and coastal areas',
         'cost_per_unit': 15.0,
-        'unit_label': 'kg waste'
-      }
+        'unit_label': 'kg waste',
+      },
     ];
-    
+
     for (final project in sampleProjects) {
       await db.insert('projects', project);
     }
@@ -751,11 +816,16 @@ class DatabaseHelper {
   // Insert sample contribution data for testing
   Future<void> insertSampleContributions(int userId) async {
     final db = await database;
-    
+
     // Check if contributions already exist
-    final existing = await db.query('contributions', where: 'user_id = ?', whereArgs: [userId], limit: 1);
+    final existing = await db.query(
+      'contributions',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      limit: 1,
+    );
     if (existing.isNotEmpty) return;
-    
+
     final now = DateTime.now();
     final sampleContributions = [
       {
@@ -794,7 +864,7 @@ class DatabaseHelper {
         'timestamp': now.subtract(const Duration(days: 30)).toIso8601String(),
       },
     ];
-    
+
     for (final contribution in sampleContributions) {
       await db.insert('contributions', contribution);
     }
@@ -816,9 +886,17 @@ class DatabaseHelper {
   }
 
   // Gamification-related methods
-  Future<int> addUserPoints(int userId, int points, String source, {String? transactionId, int? contributionId, int? achievementId, int? challengeId}) async {
+  Future<int> addUserPoints(
+    int userId,
+    int points,
+    String source, {
+    String? transactionId,
+    int? contributionId,
+    int? achievementId,
+    int? challengeId,
+  }) async {
     final db = await database;
-    
+
     // Insert points record
     await db.insert('user_points', {
       'user_id': userId,
@@ -830,13 +908,13 @@ class DatabaseHelper {
       'challenge_id': challengeId,
       'timestamp': DateTime.now().toIso8601String(),
     });
-    
+
     // Update user's total points
     await db.rawUpdate(
       'UPDATE users SET total_points = total_points + ? WHERE id = ?',
-      [points, userId]
+      [points, userId],
     );
-    
+
     return points;
   }
 
@@ -876,7 +954,11 @@ class DatabaseHelper {
     );
   }
 
-  Future<int> updateChallengeProgress(int userId, int challengeId, int progress) async {
+  Future<int> updateChallengeProgress(
+    int userId,
+    int challengeId,
+    int progress,
+  ) async {
     final db = await database;
     return await db.update(
       'challenge_progress',
@@ -894,15 +976,20 @@ class DatabaseHelper {
     return await db.insert('challenge_progress', progress);
   }
 
-  Future<List<Map<String, dynamic>>> getUserChallengeProgress(int userId) async {
+  Future<List<Map<String, dynamic>>> getUserChallengeProgress(
+    int userId,
+  ) async {
     final db = await database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT cp.*, c.title, c.description, c.target_value, c.target_unit, c.points_reward, c.end_date
       FROM challenge_progress cp
       JOIN challenges c ON cp.challenge_id = c.id
       WHERE cp.user_id = ? AND c.is_active = 1
       ORDER BY c.end_date ASC
-    ''', [userId]);
+    ''',
+      [userId],
+    );
   }
 
   Future<int> insertLeaderboardEntry(Map<String, dynamic> entry) async {
@@ -910,15 +997,22 @@ class DatabaseHelper {
     return await db.insert('leaderboard_entries', entry);
   }
 
-  Future<List<Map<String, dynamic>>> getLeaderboard(String type, String periodStart, String periodEnd) async {
+  Future<List<Map<String, dynamic>>> getLeaderboard(
+    String type,
+    String periodStart,
+    String periodEnd,
+  ) async {
     final db = await database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT le.*, u.name, u.profile_image
       FROM leaderboard_entries le
       JOIN users u ON le.user_id = u.id
       WHERE le.leaderboard_type = ? AND le.period_start = ? AND le.period_end = ?
       ORDER BY le.ranking ASC
-    ''', [type, periodStart, periodEnd]);
+    ''',
+      [type, periodStart, periodEnd],
+    );
   }
 
   Future<int> insertNotification(Map<String, dynamic> notification) async {
@@ -947,7 +1041,10 @@ class DatabaseHelper {
   }
 
   // Method to get or create challenge progress
-  Future<Map<String, dynamic>?> getChallengeProgress(int userId, int challengeId) async {
+  Future<Map<String, dynamic>?> getChallengeProgress(
+    int userId,
+    int challengeId,
+  ) async {
     final db = await database;
     final result = await db.query(
       'challenge_progress',
@@ -1003,12 +1100,21 @@ class DatabaseHelper {
   }
 
   // Achievement progress methods
-  Future<int> insertUserAchievementProgress(Map<String, dynamic> progress) async {
+  Future<int> insertUserAchievementProgress(
+    Map<String, dynamic> progress,
+  ) async {
     final db = await database;
-    return await db.insert('user_achievement_progress', progress, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+      'user_achievement_progress',
+      progress,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
-  Future<Map<String, dynamic>?> getUserAchievementProgress(int userId, int achievementId) async {
+  Future<Map<String, dynamic>?> getUserAchievementProgress(
+    int userId,
+    int achievementId,
+  ) async {
     final db = await database;
     final result = await db.query(
       'user_achievement_progress',
@@ -1018,7 +1124,9 @@ class DatabaseHelper {
     return result.isNotEmpty ? result.first : null;
   }
 
-  Future<List<Map<String, dynamic>>> getAllUserAchievementProgress(int userId) async {
+  Future<List<Map<String, dynamic>>> getAllUserAchievementProgress(
+    int userId,
+  ) async {
     final db = await database;
     return await db.query(
       'user_achievement_progress',
@@ -1028,7 +1136,11 @@ class DatabaseHelper {
     );
   }
 
-  Future<int> updateUserAchievementProgress(int userId, int achievementId, int currentProgress) async {
+  Future<int> updateUserAchievementProgress(
+    int userId,
+    int achievementId,
+    int currentProgress,
+  ) async {
     final db = await database;
     return await db.update(
       'user_achievement_progress',
@@ -1055,7 +1167,9 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getCompletedAchievements(int userId) async {
+  Future<List<Map<String, dynamic>>> getCompletedAchievements(
+    int userId,
+  ) async {
     final db = await database;
     return await db.query(
       'user_achievement_progress',
@@ -1065,7 +1179,9 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Map<String, dynamic>>> getInProgressAchievements(int userId) async {
+  Future<List<Map<String, dynamic>>> getInProgressAchievements(
+    int userId,
+  ) async {
     final db = await database;
     return await db.query(
       'user_achievement_progress',
@@ -1077,7 +1193,8 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> getAchievementStatistics(int userId) async {
     final db = await database;
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT
         COUNT(*) as total_achievements,
         SUM(CASE WHEN is_completed = 1 THEN 1 ELSE 0 END) as completed_achievements,
@@ -1085,8 +1202,10 @@ class DatabaseHelper {
         AVG(CASE WHEN is_completed = 0 THEN (current_progress * 100.0 / target_value) ELSE NULL END) as average_progress
       FROM user_achievement_progress
       WHERE user_id = ?
-    ''', [userId]);
-    
+    ''',
+      [userId],
+    );
+
     if (result.isNotEmpty) {
       return result.first;
     }
@@ -1099,9 +1218,15 @@ class DatabaseHelper {
   }
 
   // Notification Preferences methods
-  Future<int> insertNotificationPreferences(Map<String, dynamic> preferences) async {
+  Future<int> insertNotificationPreferences(
+    Map<String, dynamic> preferences,
+  ) async {
     final db = await database;
-    return await db.insert('notification_preferences', preferences, conflictAlgorithm: ConflictAlgorithm.replace);
+    return await db.insert(
+      'notification_preferences',
+      preferences,
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<Map<String, dynamic>?> getNotificationPreferences(int userId) async {
@@ -1114,7 +1239,10 @@ class DatabaseHelper {
     return result.isNotEmpty ? result.first : null;
   }
 
-  Future<int> updateNotificationPreferences(int userId, Map<String, dynamic> preferences) async {
+  Future<int> updateNotificationPreferences(
+    int userId,
+    Map<String, dynamic> preferences,
+  ) async {
     final db = await database;
     return await db.update(
       'notification_preferences',
@@ -1146,15 +1274,21 @@ class DatabaseHelper {
 
   Future<int> getUnreadNotificationCount(int userId) async {
     final db = await database;
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT COUNT(*) as count
       FROM notifications
       WHERE user_id = ? AND is_read = 0
-    ''', [userId]);
+    ''',
+      [userId],
+    );
     return result.isNotEmpty ? result.first['count'] as int : 0;
   }
 
-  Future<List<Map<String, dynamic>>> getNotificationsByType(int userId, String type) async {
+  Future<List<Map<String, dynamic>>> getNotificationsByType(
+    int userId,
+    String type,
+  ) async {
     final db = await database;
     return await db.query(
       'notifications',
@@ -1194,7 +1328,8 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>> getNotificationStatistics(int userId) async {
     final db = await database;
-    final result = await db.rawQuery('''
+    final result = await db.rawQuery(
+      '''
       SELECT
         COUNT(*) as total_notifications,
         SUM(CASE WHEN is_read = 1 THEN 1 ELSE 0 END) as read_notifications,
@@ -1202,8 +1337,10 @@ class DatabaseHelper {
         COUNT(DISTINCT notification_type) as notification_types
       FROM notifications
       WHERE user_id = ?
-    ''', [userId]);
-    
+    ''',
+      [userId],
+    );
+
     if (result.isNotEmpty) {
       return result.first;
     }
@@ -1224,14 +1361,21 @@ class DatabaseHelper {
     return await db.query(
       'notifications',
       where: 'user_id = ? AND created_at >= ? AND created_at <= ?',
-      whereArgs: [userId, startDate.toIso8601String(), endDate.toIso8601String()],
+      whereArgs: [
+        userId,
+        startDate.toIso8601String(),
+        endDate.toIso8601String(),
+      ],
       orderBy: 'created_at DESC',
     );
   }
 
-  Future<List<Map<String, dynamic>>> getNotificationTypeStats(int userId) async {
+  Future<List<Map<String, dynamic>>> getNotificationTypeStats(
+    int userId,
+  ) async {
     final db = await database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT
         notification_type,
         COUNT(*) as count,
@@ -1241,6 +1385,8 @@ class DatabaseHelper {
       WHERE user_id = ?
       GROUP BY notification_type
       ORDER BY count DESC
-    ''', [userId]);
+    ''',
+      [userId],
+    );
   }
 }

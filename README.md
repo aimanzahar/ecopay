@@ -230,7 +230,6 @@ graph TD
 
 <p float="left">
   <img src="assets/readme_img/contribution1.png" width="300" alt="Success Screen"/>
-    <img src="assets/readme_img/contribution2.png" width="300" alt="Success Screen"/>
 </p>
 
 ---
