@@ -113,9 +113,13 @@ class _EcoPayScreenState extends State<EcoPayScreen>
 
   @override
   Widget build(BuildContext context) {
+    print("EcoPayScreen build() - Screen size: ${MediaQuery.of(context).size}");
+    print("EcoPayScreen build() - User opt-in: ${_user?.ecopayOptIn}");
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_initialPositionSet) {
         final size = MediaQuery.of(context).size;
+        print("EcoPayScreen - Setting AI icon position: ${Offset(size.width - 80, size.height - 180)}");
         setState(() {
           _aiIconOffset = Offset(size.width - 80, size.height - 180);
           _initialPositionSet = true;
@@ -206,7 +210,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
     );
   }
 
-  // 5) The circular AI button:
+  // 5) The circular AI button with EcoPay styling:
   Widget _aiButton() {
     return GestureDetector(
       onTap: _openChatBox,
@@ -214,49 +218,48 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: Color.fromARGB(255, 53, 40, 128),
+          gradient: LinearGradient(
+            colors: [primaryGreen, darkGreen],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
           shape: BoxShape.circle,
-          boxShadow: [BoxShadow(blurRadius: 4, color: Colors.black26)],
+          boxShadow: [
+            BoxShadow(
+              color: primaryGreen.withOpacity(0.3),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            )
+          ],
         ),
-        child: const Icon(Icons.android, color: Colors.white),
+        child: const Icon(Icons.eco, color: Colors.white, size: 28),
       ),
     );
   }
 
-  // 6) Opens a simple chat dialog:
+  // 6) Opens a modern EcoPay-themed chat interface:
   void _openChatBox() {
-    showDialog(
+    showGeneralDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Chat with AI'),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 300,
-          child: Column(
-            children: [
-              Expanded(
-                child: Container(
-                  // TODO: replace with your chat messages list
-                  alignment: Alignment.center,
-                  child: const Text('AI Chat goes here'),
-                ),
-              ),
-              TextField(
-                decoration: const InputDecoration(hintText: 'Type a message…'),
-                onSubmitted: (msg) {
-                  // TODO: handle sending message
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      barrierDismissible: true,
+      barrierLabel: '',
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 300),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 1),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          )),
+          child: child,
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return const EcoPayChatWidget();
+      },
     );
   }
 
@@ -1159,4 +1162,444 @@ class _ImpactStatPreview extends StatelessWidget {
       ],
     );
   }
+}
+
+// Modern EcoPay-themed Chat Widget
+class EcoPayChatWidget extends StatefulWidget {
+  const EcoPayChatWidget({super.key});
+
+  @override
+  State<EcoPayChatWidget> createState() => _EcoPayChatWidgetState();
+}
+
+class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
+    with TickerProviderStateMixin {
+  final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  final List<ChatMessage> _messages = [];
+  bool _isTyping = false;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
+    );
+
+    // Add welcome message
+    _messages.add(ChatMessage(
+      text: "🌱 Hi! I'm your EcoPay assistant. How can I help you with your sustainable journey today?",
+      isUser: false,
+      timestamp: DateTime.now(),
+    ));
+
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _scrollController.dispose();
+    _fadeController.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() {
+    if (_messageController.text.trim().isEmpty) return;
+
+    final userMessage = ChatMessage(
+      text: _messageController.text.trim(),
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
+
+    setState(() {
+      _messages.add(userMessage);
+      _isTyping = true;
+    });
+
+    _messageController.clear();
+    _scrollToBottom();
+
+    // Simulate AI response
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _messages.add(ChatMessage(
+            text: _generateResponse(userMessage.text),
+            isUser: false,
+            timestamp: DateTime.now(),
+          ));
+          _isTyping = false;
+        });
+        _scrollToBottom();
+      }
+    });
+  }
+
+  String _generateResponse(String userMessage) {
+    final message = userMessage.toLowerCase();
+    if (message.contains('carbon') || message.contains('co2')) {
+      return "🌍 Great question about carbon footprint! Based on your transactions, you've saved approximately 12.3kg of CO₂ this month. Keep using EcoPay to maximize your environmental impact!";
+    } else if (message.contains('reward') || message.contains('point')) {
+      return "⭐ You currently have 1,247 green points! You can redeem them for sustainable products in the Redeem section. You're 253 points away from your next reward!";
+    } else if (message.contains('tip') || message.contains('help')) {
+      return "💡 Here are some eco-friendly tips:\n• Use digital receipts to save paper\n• Walk to nearby stores when possible\n• Choose businesses with green certifications\n• Round up your payments to support environmental projects!";
+    } else {
+      return "🌱 Thanks for your message! I'm here to help you with your EcoPay journey, environmental tips, and tracking your green impact. What would you like to know more about?";
+    }
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    // Add safety bounds for chat height to prevent overflow
+    final maxChatHeight = screenSize.height - 100; // Leave space for system UI
+    final chatHeight = (screenSize.height * 0.7).clamp(300.0, maxChatHeight);
+    
+    return Material(
+      type: MaterialType.transparency,
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: Align(
+          alignment: Alignment.bottomCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: chatHeight,
+              maxWidth: screenSize.width - 32, // Account for margins
+            ),
+            child: Container(
+              height: chatHeight,
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(25),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Material(
+                type: MaterialType.transparency,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildChatHeader(),
+                    Expanded(
+                      child: _buildMessagesList(),
+                    ),
+                    if (_isTyping) _buildTypingIndicator(),
+                    _buildMessageInput(),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryGreen, darkGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(25),
+          topRight: Radius.circular(25),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.eco, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'EcoPay Assistant',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'Your sustainable companion 🌱',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: Colors.white),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMessagesList() {
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: _messages.length,
+      itemBuilder: (context, index) {
+        return _buildMessageBubble(_messages[index]);
+      },
+    );
+  }
+
+  Widget _buildMessageBubble(ChatMessage message) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment:
+            message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        children: [
+          if (!message.isUser) _buildBotAvatar(),
+          if (!message.isUser) const SizedBox(width: 8),
+          Flexible(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: message.isUser
+                    ? primaryGreen
+                    : lightGreen.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.text,
+                    style: TextStyle(
+                      color: message.isUser ? Colors.white : textPrimary,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatTime(message.timestamp),
+                    style: TextStyle(
+                      color: message.isUser
+                          ? Colors.white.withOpacity(0.7)
+                          : textSecondary,
+                      fontSize: 10,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (message.isUser) const SizedBox(width: 8),
+          if (message.isUser) _buildUserAvatar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBotAvatar() {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [primaryGreen, lightGreen],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: const Icon(Icons.eco, color: Colors.white, size: 18),
+    );
+  }
+
+  Widget _buildUserAvatar() {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade300,
+        shape: BoxShape.circle,
+      ),
+      child: Icon(Icons.person, color: Colors.grey.shade600, size: 18),
+    );
+  }
+
+  Widget _buildTypingIndicator() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          _buildBotAvatar(),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: lightGreen.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildTypingDot(0),
+                const SizedBox(width: 4),
+                _buildTypingDot(200),
+                const SizedBox(width: 4),
+                _buildTypingDot(400),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTypingDot(int delay) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.2, end: 1.0),
+      duration: const Duration(milliseconds: 600),
+      builder: (context, value, child) {
+        return Container(
+          width: 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: primaryGreen.withOpacity(value),
+            shape: BoxShape.circle,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMessageInput() {
+    print("EcoPayChatWidget _buildMessageInput() - Building message input");
+    print("EcoPayChatWidget _buildMessageInput() - Material context: ${Material.maybeOf(context) != null}");
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(25),
+          bottomRight: Radius.circular(25),
+        ),
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText: 'Ask about your green impact...',
+                    hintStyle: TextStyle(color: Colors.grey.shade500),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                  ),
+                  onSubmitted: (_) => _sendMessage(),
+                  textInputAction: TextInputAction.send,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [primaryGreen, darkGreen],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryGreen.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: _sendMessage,
+                icon: const Icon(Icons.send, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    required this.timestamp,
+  });
 }
