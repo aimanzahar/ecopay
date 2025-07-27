@@ -10,6 +10,7 @@ import 'transaction_history_screen.dart';
 import 'donation_history_screen.dart';
 import 'my_contribution_screen.dart';
 import 'redeem_screen.dart';
+import 'ecopay_tree_screen.dart';
 
 // Color Scheme Constants
 const Color primaryGreen = Color(0xFF2E7D32); // Main green
@@ -593,6 +594,13 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                 Icons.workspace_premium,
                 Colors.purple,
                 AchievementsScreen(),
+              ),
+              const SizedBox(width: 15),
+              _buildGamificationItem(
+                'EcoPayTree',
+                Icons.park,
+                primaryGreen,
+                EcoPayTreeScreen(),
               ),
             ],
           ),
