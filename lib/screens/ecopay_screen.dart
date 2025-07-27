@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../helpers/database_helper.dart';
 import '../models/user.dart';
 import '../models/contribution.dart';
+import '../services/ollama_service.dart';
 import 'achievements_screen.dart';
 import 'challenges_screen.dart';
 import 'leaderboard_screen.dart';
@@ -1177,13 +1178,20 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
+  final List<Map<String, String>> _conversationHistory = [];
   bool _isTyping = false;
+  bool _isConnecting = true;
+  bool _serverAvailable = false;
+  bool _showQuickStartButtons = true;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  late OllamaService _ollamaService;
 
   @override
   void initState() {
     super.initState();
+    _ollamaService = OllamaService();
+    
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -1192,14 +1200,33 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
     );
 
-    // Add welcome message
+    _initializeChat();
+    _fadeController.forward();
+  }
+
+  Future<void> _initializeChat() async {
+    // Check server availability
+    final isAvailable = await _ollamaService.isServerAvailable();
+    
+    setState(() {
+      _serverAvailable = isAvailable;
+      _isConnecting = false;
+    });
+
+    // Add welcome message based on server availability
+    final welcomeMessage = _serverAvailable
+        ? "🌱 Hi! I'm your EcoPay assistant. I have access to all your sustainability data and can provide personalized insights about your environmental impact. How can I help you with your green journey today?"
+        : "🌱 Hi! I'm your EcoPay assistant. I'm currently running in offline mode, but I can still help you with basic EcoPay information and sustainability tips. How can I assist you today?";
+
     _messages.add(ChatMessage(
-      text: "🌱 Hi! I'm your EcoPay assistant. How can I help you with your sustainable journey today?",
+      text: welcomeMessage,
       isUser: false,
       timestamp: DateTime.now(),
     ));
 
-    _fadeController.forward();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -1210,29 +1237,55 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
     super.dispose();
   }
 
-  void _sendMessage() {
+  void _sendQuickStartMessage(String message) async {
+    _messageController.text = message;
+    _sendMessage();
+  }
+
+  void _sendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
+    final userMessageText = _messageController.text.trim();
     final userMessage = ChatMessage(
-      text: _messageController.text.trim(),
+      text: userMessageText,
       isUser: true,
       timestamp: DateTime.now(),
     );
 
+    // Add user message to conversation history
+    _conversationHistory.add({
+      'role': 'User',
+      'content': userMessageText,
+    });
+
     setState(() {
       _messages.add(userMessage);
       _isTyping = true;
+      _showQuickStartButtons = false; // Hide quick-start buttons after first message
     });
 
     _messageController.clear();
     _scrollToBottom();
 
-    // Simulate AI response
-    Future.delayed(const Duration(seconds: 2), () {
+    try {
+      // Get AI response from Ollama service with conversation history
+      final aiResponse = await _ollamaService.sendChatMessage(userMessageText, 1, _conversationHistory);
+      
+      // Add AI response to conversation history
+      _conversationHistory.add({
+        'role': 'Assistant',
+        'content': aiResponse,
+      });
+
+      // Keep conversation history manageable (last 16 messages = 8 exchanges)
+      if (_conversationHistory.length > 16) {
+        _conversationHistory.removeRange(0, _conversationHistory.length - 16);
+      }
+      
       if (mounted) {
         setState(() {
           _messages.add(ChatMessage(
-            text: _generateResponse(userMessage.text),
+            text: aiResponse,
             isUser: false,
             timestamp: DateTime.now(),
           ));
@@ -1240,7 +1293,29 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
         });
         _scrollToBottom();
       }
-    });
+    } catch (e) {
+      print('Error sending message to Ollama: $e');
+      
+      final fallbackResponse = _generateResponse(userMessageText);
+      
+      // Add fallback response to conversation history too
+      _conversationHistory.add({
+        'role': 'Assistant',
+        'content': fallbackResponse,
+      });
+      
+      if (mounted) {
+        setState(() {
+          _messages.add(ChatMessage(
+            text: "🔧 I encountered an issue connecting to my AI brain. Here's what I can help with:\n\n$fallbackResponse",
+            isUser: false,
+            timestamp: DateTime.now(),
+          ));
+          _isTyping = false;
+        });
+        _scrollToBottom();
+      }
+    }
   }
 
   String _generateResponse(String userMessage) {
@@ -1309,6 +1384,7 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
                     Expanded(
                       child: _buildMessagesList(),
                     ),
+                    if (_showQuickStartButtons) _buildQuickStartButtons(),
                     if (_isTyping) _buildTypingIndicator(),
                     _buildMessageInput(),
                   ],
@@ -1350,16 +1426,43 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'EcoPay Assistant',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    const Text(
+                      'EcoPay Assistant',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (_isConnecting)
+                      SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          color: Colors.white.withOpacity(0.7),
+                          strokeWidth: 2,
+                        ),
+                      )
+                    else
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: _serverAvailable ? Colors.green : Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                  ],
                 ),
                 Text(
-                  'Your sustainable companion 🌱',
+                  _isConnecting
+                      ? 'Connecting to server...'
+                      : _serverAvailable
+                          ? 'Powered by Trees 🌱'
+                          : 'Offline mode 🌱',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: 12,
@@ -1517,6 +1620,60 @@ class _EcoPayChatWidgetState extends State<EcoPayChatWidget>
           ),
         );
       },
+    );
+  }
+
+  Widget _buildQuickStartButtons() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            'Quick Start',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildQuickStartButton('💰 Check my balance', 'What is my current balance?'),
+              _buildQuickStartButton('🌍 CO₂ savings', 'How much CO₂ have I saved?'),
+              _buildQuickStartButton('⭐ My rewards', 'How many green points do I have?'),
+              _buildQuickStartButton('📊 Impact summary', 'Show me my environmental impact'),
+              _buildQuickStartButton('💡 Green tips', 'Give me sustainability tips'),
+              _buildQuickStartButton('🏆 Challenges', 'What challenges are available?'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickStartButton(String label, String message) {
+    return GestureDetector(
+      onTap: () => _sendQuickStartMessage(message),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: lightGreen.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: primaryGreen.withOpacity(0.3)),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: primaryGreen,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
     );
   }
 
