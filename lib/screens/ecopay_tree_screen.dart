@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../helpers/database_helper.dart';
 import '../models/user.dart';
 import '../models/contribution.dart';
@@ -103,7 +104,8 @@ class _EcoPayTreeScreenState extends State<EcoPayTreeScreen>
     if (level < 0.3) return 'Sapling';
     if (level < 0.6) return 'Young Tree';
     if (level < 0.8) return 'Mature Tree';
-    return 'Ancient Tree';
+    if (level < 1.0) return 'Ancient Tree';
+    return 'Legendary Giant';
   }
 
   Color get _treeColor {
@@ -463,72 +465,429 @@ class TreePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final center = Offset(size.width / 2, size.height);
+    
+    // Draw ground first
+    _drawGround(canvas, size);
+    
+    // Draw roots if mature enough
+    if (growthLevel > 0.4) {
+      _drawRoots(canvas, size, center);
+    }
+    
+    // Draw main trunk
+    _drawTrunk(canvas, size, center);
+    
+    // Draw branch system
+    if (growthLevel > 0.2) {
+      _drawBranchSystem(canvas, size, center);
+    }
+    
+    // Add special effects for fully grown tree
+    if (growthLevel >= 1.0) {
+      _drawSpecialEffects(canvas, size, center);
+    }
+  }
+
+  void _drawGround(Canvas canvas, Size size) {
+    final groundPaint = Paint()
+      ..color = Colors.brown.shade300
+      ..style = PaintingStyle.fill;
+
+    // Enhanced ground with gradient effect
+    final gradient = LinearGradient(
+      colors: [Colors.brown.shade400, Colors.brown.shade200],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+    
+    final groundRect = Rect.fromLTWH(0, size.height - 15, size.width, 15);
+    groundPaint.shader = gradient.createShader(groundRect);
+    canvas.drawRect(groundRect, groundPaint);
+    
+    // Add grass effect
+    final grassPaint = Paint()
+      ..color = Colors.green.shade300
+      ..strokeWidth = 1
+      ..strokeCap = StrokeCap.round;
+    
+    for (int i = 0; i < size.width.toInt(); i += 8) {
+      canvas.drawLine(
+        Offset(i.toDouble(), size.height - 15),
+        Offset(i.toDouble(), size.height - 12),
+        grassPaint,
+      );
+    }
+  }
+
+  void _drawRoots(Canvas canvas, Size size, Offset center) {
+    final rootPaint = Paint()
       ..color = Colors.brown.shade600
-      ..strokeWidth = 8
+      ..strokeWidth = 3 + (growthLevel * 2)
       ..strokeCap = StrokeCap.round;
 
+    final rootLength = size.width * 0.15 * growthLevel;
+    
+    // Draw multiple root branches
+    for (int i = 0; i < 5; i++) {
+      final angle = -math.pi / 2 + (i - 2) * 0.4;
+      final rootEnd = Offset(
+        center.dx + rootLength * (0.5 + growthLevel * 0.5) * math.cos(angle),
+        center.dy - 5 + (growthLevel * 10) * math.sin(angle).abs(),
+      );
+      
+      canvas.drawLine(
+        Offset(center.dx, center.dy - 10),
+        rootEnd,
+        rootPaint,
+      );
+    }
+  }
+
+  void _drawTrunk(Canvas canvas, Size size, Offset center) {
+    final trunkHeight = size.height * (0.35 + growthLevel * 0.25);
+    final trunkTop = Offset(center.dx, center.dy - trunkHeight);
+    
+    // Progressive trunk thickness
+    final baseWidth = 12 + (growthLevel * 8);
+    final topWidth = 6 + (growthLevel * 4);
+    
+    // Draw trunk with taper
+    final trunkPaint = Paint()
+      ..color = Colors.brown.shade700
+      ..style = PaintingStyle.fill;
+
+    final trunkPath = Path();
+    trunkPath.moveTo(center.dx - baseWidth / 2, center.dy);
+    trunkPath.lineTo(center.dx + baseWidth / 2, center.dy);
+    trunkPath.lineTo(trunkTop.dx + topWidth / 2, trunkTop.dy);
+    trunkPath.lineTo(trunkTop.dx - topWidth / 2, trunkTop.dy);
+    trunkPath.close();
+    
+    canvas.drawPath(trunkPath, trunkPaint);
+    
+    // Add trunk texture
+    final texturePaint = Paint()
+      ..color = Colors.brown.shade600
+      ..strokeWidth = 1;
+    
+    for (double y = center.dy - 20; y > trunkTop.dy; y -= 15) {
+      canvas.drawLine(
+        Offset(center.dx - (baseWidth * (center.dy - y) / trunkHeight) / 3, y),
+        Offset(center.dx + (baseWidth * (center.dy - y) / trunkHeight) / 3, y),
+        texturePaint,
+      );
+    }
+  }
+
+  void _drawBranchSystem(Canvas canvas, Size size, Offset center) {
+    final trunkHeight = size.height * (0.35 + growthLevel * 0.25);
+    final trunkTop = Offset(center.dx, center.dy - trunkHeight);
+    
+    // Primary branches
+    _drawPrimaryBranches(canvas, size, trunkTop);
+    
+    // Secondary branches for mature trees
+    if (growthLevel > 0.5) {
+      _drawSecondaryBranches(canvas, size, trunkTop);
+    }
+    
+    // Intermediate canopy for mature trees (60-80%)
+    if (growthLevel > 0.6 && growthLevel <= 0.8) {
+      _drawIntermediateCanopy(canvas, size, trunkTop);
+    }
+    
+    // Full canopy for ancient trees (80%+)
+    if (growthLevel > 0.8) {
+      _drawFullCanopy(canvas, size, trunkTop);
+    }
+  }
+
+  void _drawPrimaryBranches(Canvas canvas, Size size, Offset trunkTop) {
+    final branchPaint = Paint()
+      ..color = Colors.brown.shade500
+      ..strokeWidth = 4 + (growthLevel * 3)
+      ..strokeCap = StrokeCap.round;
+
+    final branchLength = size.height * 0.2 * growthLevel;
+    
+    // Main left and right branches
+    final branches = [
+      {'angle': -0.7, 'length': branchLength},
+      {'angle': 0.7, 'length': branchLength},
+      {'angle': -0.3, 'length': branchLength * 0.8},
+      {'angle': 0.3, 'length': branchLength * 0.8},
+    ];
+    
+    for (final branch in branches) {
+      final angle = branch['angle'] as double;
+      final length = branch['length'] as double;
+      
+      final branchEnd = Offset(
+        trunkTop.dx + length * math.cos(angle + swayAngle),
+        trunkTop.dy + length * math.sin(angle) - length * 0.3,
+      );
+      
+      canvas.drawLine(trunkTop, branchEnd, branchPaint);
+      
+      // Draw leaves on primary branches
+      if (growthLevel > 0.3) {
+        _drawLeavesOnBranch(canvas, trunkTop, branchEnd, 8 + (growthLevel * 4).toInt());
+      }
+    }
+  }
+
+  void _drawSecondaryBranches(Canvas canvas, Size size, Offset trunkTop) {
+    final branchPaint = Paint()
+      ..color = Colors.brown.shade400
+      ..strokeWidth = 2 + growthLevel
+      ..strokeCap = StrokeCap.round;
+
+    final branchLength = size.height * 0.12 * growthLevel;
+    
+    // More numerous secondary branches
+    for (int i = 0; i < 8; i++) {
+      final angle = -math.pi / 2 + (i * math.pi / 4);
+      final length = branchLength * (0.7 + (i % 2) * 0.3);
+      
+      final branchStart = Offset(
+        trunkTop.dx + (size.height * 0.15 * math.cos(angle)) * growthLevel,
+        trunkTop.dy - (size.height * 0.1) + (i * 5),
+      );
+      
+      final branchEnd = Offset(
+        branchStart.dx + length * math.cos(angle + swayAngle * 0.5),
+        branchStart.dy + length * math.sin(angle),
+      );
+      
+      canvas.drawLine(branchStart, branchEnd, branchPaint);
+      
+      // Leaves on secondary branches
+      _drawLeavesOnBranch(canvas, branchStart, branchEnd, 4 + (growthLevel * 2).toInt());
+    }
+  }
+
+  void _drawIntermediateCanopy(Canvas canvas, Size size, Offset trunkTop) {
+    // Create leaves attached to branch endpoints for 60-80% growth
     final leafPaint = Paint()
       ..color = treeColor
       ..style = PaintingStyle.fill;
-
-    final center = Offset(size.width / 2, size.height);
-    final trunkHeight = size.height * 0.4 * growthLevel;
-    final trunkTop = Offset(center.dx, center.dy - trunkHeight);
-
-    // Draw trunk
-    canvas.drawLine(center, trunkTop, paint);
-
-    if (growthLevel > 0.2) {
-      // Draw branches
-      final branchLength = size.height * 0.15 * growthLevel;
-      final branchPaint = Paint()
-        ..color = Colors.brown.shade400
-        ..strokeWidth = 4
-        ..strokeCap = StrokeCap.round;
-
-      // Left branch
-      final leftBranch = Offset(
-        trunkTop.dx - branchLength + (swayAngle * 10),
-        trunkTop.dy + branchLength * 0.3,
+    
+    final branchLength = size.height * 0.2 * growthLevel;
+    
+    // Draw leaves at the end of each main branch direction
+    final branchAngles = [-0.7, 0.7, -0.3, 0.3, -1.0, 1.0];
+    
+    for (final angle in branchAngles) {
+      final length = branchLength * (angle.abs() > 0.5 ? 1.0 : 0.8);
+      
+      // Calculate branch endpoint
+      final branchEnd = Offset(
+        trunkTop.dx + length * math.cos(angle + swayAngle),
+        trunkTop.dy + length * math.sin(angle) - length * 0.3,
       );
-      canvas.drawLine(trunkTop, leftBranch, branchPaint);
-
-      // Right branch
-      final rightBranch = Offset(
-        trunkTop.dx + branchLength + (swayAngle * 10),
-        trunkTop.dy + branchLength * 0.3,
-      );
-      canvas.drawLine(trunkTop, rightBranch, branchPaint);
-
-      // Draw leaves
-      if (growthLevel > 0.3) {
-        for (int i = 0; i < leafCount; i++) {
-          final angle = (i * 2 * 3.14159) / leafCount;
-          final leafRadius = 8 + (growthLevel * 12);
-          final leafX = trunkTop.dx + 
-              (leafRadius * 2 * (0.5 + growthLevel * 0.5)) * (i.isEven ? 1 : -1) * 
-              (0.7 + 0.3 * (i / leafCount)) + (swayAngle * 20);
-          final leafY = trunkTop.dy - leafRadius + (i * 3) - (growthLevel * 20);
-
-          canvas.drawCircle(
-            Offset(leafX, leafY),
-            leafRadius,
-            leafPaint,
+      
+      // Draw multiple leaves around each branch endpoint
+      final leavesPerBranch = (3 + (growthLevel * 2)).toInt();
+      for (int i = 0; i < leavesPerBranch; i++) {
+        final leafAngle = (i * 2 * math.pi) / leavesPerBranch;
+        final leafDistance = 15 + (growthLevel * 10); // Distance from branch end
+        
+        final leafPos = Offset(
+          branchEnd.dx + leafDistance * math.cos(leafAngle + swayAngle),
+          branchEnd.dy + leafDistance * 0.6 * math.sin(leafAngle),
+        );
+        
+        final leafSize = 7 + (growthLevel * 3);
+        canvas.drawCircle(leafPos, leafSize, leafPaint);
+      }
+      
+      // Add some leaves along the branch path for more fullness
+      for (int j = 1; j <= 3; j++) {
+        final t = j / 4.0; // Along branch from trunk to end
+        final branchPoint = Offset(
+          trunkTop.dx + (branchEnd.dx - trunkTop.dx) * t,
+          trunkTop.dy + (branchEnd.dy - trunkTop.dy) * t,
+        );
+        
+        // Small cluster of leaves at this branch point
+        for (int k = 0; k < 2; k++) {
+          final clusterAngle = k * math.pi;
+          final clusterPos = Offset(
+            branchPoint.dx + 8 * math.cos(clusterAngle + swayAngle),
+            branchPoint.dy + 8 * 0.5 * math.sin(clusterAngle),
           );
+          
+          final clusterLeafSize = 5 + (growthLevel * 2);
+          canvas.drawCircle(clusterPos, clusterLeafSize, leafPaint);
         }
       }
     }
+  }
 
-    // Draw ground
-    final groundPaint = Paint()
-      ..color = Colors.brown.shade200
+  void _drawFullCanopy(Canvas canvas, Size size, Offset trunkTop) {
+    // Create a grand, natural canopy for 100% grown trees
+    final canopyCenter = Offset(trunkTop.dx, trunkTop.dy - size.height * 0.12);
+    final canopyRadius = size.width * 0.25 * growthLevel;
+    
+    // For 100% growth, create a magnificent but natural canopy
+    if (growthLevel >= 1.0) {
+      // Draw main canopy shape with organic variations
+      final mainCanopyPaint = Paint()
+        ..color = Colors.green.shade700.withOpacity(0.9)
+        ..style = PaintingStyle.fill;
+      
+      // Create organic canopy shape with overlapping circles
+      final canopyPoints = [
+        Offset(canopyCenter.dx, canopyCenter.dy - canopyRadius * 0.3), // top
+        Offset(canopyCenter.dx - canopyRadius * 0.8, canopyCenter.dy), // left
+        Offset(canopyCenter.dx + canopyRadius * 0.8, canopyCenter.dy), // right
+        Offset(canopyCenter.dx - canopyRadius * 0.5, canopyCenter.dy + canopyRadius * 0.3), // bottom left
+        Offset(canopyCenter.dx + canopyRadius * 0.5, canopyCenter.dy + canopyRadius * 0.3), // bottom right
+      ];
+      
+      // Draw organic canopy shape
+      for (final point in canopyPoints) {
+        final leafCluster = Offset(
+          point.dx + (swayAngle * 8),
+          point.dy,
+        );
+        canvas.drawCircle(leafCluster, canopyRadius * 0.6, mainCanopyPaint);
+      }
+      
+      // Add highlight layer for depth
+      final highlightPaint = Paint()
+        ..color = treeColor.withOpacity(0.8)
+        ..style = PaintingStyle.fill;
+      
+      for (int i = 0; i < canopyPoints.length; i++) {
+        final point = canopyPoints[i];
+        final highlightPos = Offset(
+          point.dx + (swayAngle * 5) - canopyRadius * 0.1,
+          point.dy - canopyRadius * 0.1,
+        );
+        canvas.drawCircle(highlightPos, canopyRadius * 0.4, highlightPaint);
+      }
+      
+      // Add bright accent leaves for legendary status
+      final accentPaint = Paint()
+        ..color = Colors.lightGreen.shade200.withOpacity(0.7)
+        ..style = PaintingStyle.fill;
+      
+      for (int i = 0; i < 8; i++) {
+        final angle = (i * math.pi * 2) / 8;
+        final accentPos = Offset(
+          canopyCenter.dx + canopyRadius * 0.6 * math.cos(angle + swayAngle),
+          canopyCenter.dy + canopyRadius * 0.4 * math.sin(angle),
+        );
+        canvas.drawCircle(accentPos, canopyRadius * 0.15, accentPaint);
+      }
+    } else {
+      // Regular canopy for other growth levels
+      final leafPaint = Paint()
+        ..color = treeColor
+        ..style = PaintingStyle.fill;
+      
+      for (int i = 0; i < leafCount; i++) {
+        final angle = (i * 2 * math.pi) / leafCount;
+        final leafRadius = 8 + (growthLevel * 8);
+        final distance = canopyRadius * (0.6 + (i % 3) * 0.3);
+        
+        final leafX = canopyCenter.dx + distance * math.cos(angle + swayAngle);
+        final leafY = canopyCenter.dy + distance * 0.6 * math.sin(angle);
+
+        canvas.drawCircle(Offset(leafX, leafY), leafRadius, leafPaint);
+      }
+    }
+  }
+
+  void _drawLeavesOnBranch(Canvas canvas, Offset start, Offset end, int count) {
+    final leafPaint = Paint()
+      ..color = treeColor
       ..style = PaintingStyle.fill;
+    
+    for (int i = 0; i < count; i++) {
+      final t = i / count;
+      final leafPos = Offset(
+        start.dx + (end.dx - start.dx) * t + (swayAngle * 15),
+        start.dy + (end.dy - start.dy) * t - (growthLevel * 5),
+      );
+      
+      // Simple, properly sized leaves
+      final leafSize = 5 + (growthLevel * 2); // Reasonable size that's not too big or too small
+      canvas.drawCircle(leafPos, leafSize, leafPaint);
+    }
+  }
 
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height - 10, size.width, 10),
-      groundPaint,
-    );
+  void _drawSpecialEffects(Canvas canvas, Size size, Offset center) {
+    // Add magical sparkles around a fully grown tree
+    final sparkleCount = 15;
+    final sparkleRadius = size.width * 0.4;
+    
+    for (int i = 0; i < sparkleCount; i++) {
+      final angle = (i * 2 * math.pi) / sparkleCount;
+      final distance = sparkleRadius * (0.7 + (i % 3) * 0.15);
+      
+      final sparklePos = Offset(
+        center.dx + distance * math.cos(angle + swayAngle * 2),
+        center.dy - size.height * 0.5 + distance * math.sin(angle) * 0.3,
+      );
+      
+      // Golden sparkles
+      final sparklePaint = Paint()
+        ..color = Colors.amber.shade300.withOpacity(0.7 + (swayAngle.abs() * 0.3))
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(sparklePos, 2, sparklePaint);
+      
+      // Add a subtle glow effect
+      final glowPaint = Paint()
+        ..color = Colors.yellow.shade200.withOpacity(0.3)
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(sparklePos, 4, glowPaint);
+    }
+    
+    // Add fruits/flowers for the legendary tree
+    _drawFruits(canvas, size, center);
+  }
+
+  void _drawFruits(Canvas canvas, Size size, Offset center) {
+    final fruitCount = 8;
+    final trunkHeight = size.height * (0.35 + growthLevel * 0.25);
+    final trunkTop = Offset(center.dx, center.dy - trunkHeight);
+    final canopyCenter = Offset(trunkTop.dx, trunkTop.dy - size.height * 0.12);
+    final canopyRadius = size.width * 0.2; // Match the actual canopy size
+    
+    for (int i = 0; i < fruitCount; i++) {
+      final angle = (i * 2 * math.pi) / fruitCount;
+      // Position fruits closer to the canopy edge, within the actual canopy area
+      final distance = canopyRadius * (0.7 + (i % 2) * 0.2);
+      
+      final fruitPos = Offset(
+        canopyCenter.dx + distance * math.cos(angle) + (swayAngle * 8),
+        canopyCenter.dy + distance * 0.6 * math.sin(angle),
+      );
+      
+      // Draw colorful fruits
+      final fruitColors = [Colors.red.shade400, Colors.orange.shade400, Colors.yellow.shade600];
+      final fruitPaint = Paint()
+        ..color = fruitColors[i % fruitColors.length]
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(fruitPos, 4, fruitPaint);
+      
+      // Add highlight
+      final highlightPaint = Paint()
+        ..color = Colors.white.withOpacity(0.6)
+        ..style = PaintingStyle.fill;
+      
+      canvas.drawCircle(
+        Offset(fruitPos.dx - 1, fruitPos.dy - 1),
+        1.5,
+        highlightPaint,
+      );
+    }
   }
 
   @override
@@ -537,4 +896,5 @@ class TreePainter extends CustomPainter {
         oldDelegate.swayAngle != swayAngle ||
         oldDelegate.leafCount != leafCount;
   }
+  
 }
