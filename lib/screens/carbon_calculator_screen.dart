@@ -1,16 +1,21 @@
+// lib/screens/carbon_calculator_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../services/ollama_service.dart';
 import '../helpers/database_helper.dart';
 import '../models/user.dart';
 
+// ← Import your reusable calculator
+import '../utils/carbon_calculator.dart';
+
 // Color Scheme Constants
-const Color primaryGreen = Color(0xFF2E7D32);
-const Color lightGreen = Color(0xFFA5D6A7);
-const Color darkGreen = Color(0xFF1B5E20);
-const Color textPrimary = Color(0xFF263238);
-const Color textSecondary = Color(0xFF607D8B);
-const Color accentBlue = Color(0xFF1976D2);
+const Color primaryGreen   = Color(0xFF2E7D32);
+const Color lightGreen     = Color(0xFFA5D6A7);
+const Color darkGreen      = Color(0xFF1B5E20);
+const Color textPrimary    = Color(0xFF263238);
+const Color textSecondary  = Color(0xFF607D8B);
 
 class CarbonCalculatorScreen extends StatefulWidget {
   const CarbonCalculatorScreen({super.key});
@@ -22,48 +27,34 @@ class CarbonCalculatorScreen extends StatefulWidget {
 class _CarbonCalculatorScreenState extends State<CarbonCalculatorScreen>
     with TickerProviderStateMixin {
   final TextEditingController _amountController = TextEditingController();
-  final TextEditingController _chatController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
-  final DatabaseHelper _databaseHelper = DatabaseHelper();
-  final OllamaService _ollamaService = OllamaService();
-  
-  double _calculatedCarbon = 0.0;
-  double _carbonPerRM = 0.084; // Base carbon footprint per RM1 (kg CO2)
-  bool _isCalculating = false;
-  bool _showResults = false;
-  String _selectedCategory = 'General';
-  
-  User? _user;
-  List<ChatMessage> _chatMessages = [];
-  bool _isChatting = false;
-  bool _serverAvailable = false;
-  
+  final TextEditingController _chatController   = TextEditingController();
+  final ScrollController      _scrollController = ScrollController();
+  final DatabaseHelper        _databaseHelper   = DatabaseHelper();
+  final OllamaService         _ollamaService    = OllamaService();
+
+  double  _calculatedCarbon = 0.0;
+  bool    _isCalculating    = false;
+  bool    _showResults      = false;
+  String  _selectedCategory = CarbonCalculator.categories.first;
+
+  User?             _user;
+  List<ChatMessage> _chatMessages    = [];
+  bool              _isChatting      = false;
+  bool              _serverAvailable = false;
+
   late AnimationController _resultAnimationController;
-  late Animation<double> _resultScaleAnimation;
-  
-  // Carbon footprint factors by category (kg CO2 per RM)
-  final Map<String, double> _carbonFactors = {
-    'General': 0.084,
-    'Transportation': 0.156,
-    'Food & Dining': 0.067,
-    'Utilities': 0.198,
-    'Shopping': 0.045,
-    'Entertainment': 0.032,
-    'Healthcare': 0.089,
-    'Education': 0.023,
-  };
+  late Animation<double>   _resultScaleAnimation;
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
     _checkServerAvailability();
-    
+
     _resultAnimationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
     _resultScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _resultAnimationController,
@@ -83,44 +74,43 @@ class _CarbonCalculatorScreenState extends State<CarbonCalculatorScreen>
 
   Future<void> _loadUserData() async {
     final user = await _databaseHelper.getUser(1);
-    setState(() {
-      _user = user;
-    });
+    setState(() => _user = user);
   }
 
   Future<void> _checkServerAvailability() async {
     final isAvailable = await _ollamaService.isServerAvailable();
-    setState(() {
-      _serverAvailable = isAvailable;
-    });
+    setState(() => _serverAvailable = isAvailable);
   }
 
   void _calculateCarbon() {
-    if (_amountController.text.isEmpty) return;
-    
-    final amount = double.tryParse(_amountController.text);
+    final text = _amountController.text;
+    if (text.isEmpty) return;
+
+    final amount = double.tryParse(text);
     if (amount == null || amount <= 0) {
       _showErrorDialog('Please enter a valid amount greater than 0');
       return;
     }
 
-    setState(() {
-      _isCalculating = true;
-    });
+    setState(() => _isCalculating = true);
 
-    // Simulate calculation delay for better UX
     Future.delayed(const Duration(milliseconds: 800), () {
-      final carbonFactor = _carbonFactors[_selectedCategory] ?? _carbonPerRM;
+      final carbon = CarbonCalculator.calculate(
+        amount: amount,
+        category: _selectedCategory,
+      );
+
       setState(() {
-        _calculatedCarbon = amount * carbonFactor;
-        _isCalculating = false;
-        _showResults = true;
+        _calculatedCarbon = carbon;
+        _isCalculating    = false;
+        _showResults      = true;
       });
-      
+
       _resultAnimationController.forward();
       _addSystemMessage(
-        'I calculated your carbon footprint for RM$amount in $_selectedCategory category. '
-        'Would you like me to suggest ways to reduce your environmental impact?'
+        'I calculated your carbon footprint for RM$amount in '
+        '$_selectedCategory: ${carbon.toStringAsFixed(3)} kg CO₂. '
+        'Would you like suggestions to reduce it?'
       );
     });
   }
@@ -137,9 +127,9 @@ class _CarbonCalculatorScreenState extends State<CarbonCalculatorScreen>
   }
 
   void _sendChatMessage() async {
-    if (_chatController.text.trim().isEmpty) return;
-
     final userMessage = _chatController.text.trim();
+    if (userMessage.isEmpty) return;
+
     setState(() {
       _chatMessages.add(ChatMessage(
         text: userMessage,
@@ -153,21 +143,24 @@ class _CarbonCalculatorScreenState extends State<CarbonCalculatorScreen>
     _scrollToBottom();
 
     try {
-      // Create context about the current calculation
-      final calculationContext = _showResults 
-          ? 'User just calculated carbon footprint: RM${_amountController.text} in $_selectedCategory category results in ${_calculatedCarbon.toStringAsFixed(3)} kg CO₂'
-          : 'User is on the carbon calculator screen but hasn\'t calculated anything yet';
+      final calculationContext = _showResults
+          ? 'User just calculated carbon footprint: '
+            'RM${_amountController.text} in $_selectedCategory = '
+            '${_calculatedCarbon.toStringAsFixed(3)} kg CO₂'
+          : 'User on calculator screen without calculation';
 
       final prompt = '''
 Context: $calculationContext
-Carbon factors by category: ${_carbonFactors.toString()}
 User question: $userMessage
 
-Please provide helpful advice about carbon footprint, environmental impact, or sustainable spending habits.
+Please provide helpful advice about carbon footprint or sustainability.
 ''';
 
-      final response = await _ollamaService.sendChatMessage(prompt, _user?.id ?? 1);
-      
+      final response = await _ollamaService.sendChatMessage(
+        prompt,
+        _user?.id ?? 1,
+      );
+
       setState(() {
         _chatMessages.add(ChatMessage(
           text: response,
@@ -176,7 +169,7 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
         ));
         _isChatting = false;
       });
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _chatMessages.add(ChatMessage(
           text: _getFallbackResponse(userMessage),
@@ -186,19 +179,17 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
         _isChatting = false;
       });
     }
-    
+
     _scrollToBottom();
   }
 
   String _getFallbackResponse(String message) {
     final msg = message.toLowerCase();
-    if (msg.contains('reduce') || msg.contains('lower') || msg.contains('decrease')) {
-      return '🌱 To reduce your carbon footprint: Choose local products, use public transport, opt for digital receipts, and support eco-friendly businesses. Every RM you spend mindfully can save up to 0.084 kg CO₂!';
-    } else if (msg.contains('category') || msg.contains('type')) {
-      return '📊 Different spending categories have different carbon impacts. Transportation has the highest impact (0.156 kg CO₂/RM), while entertainment has the lowest (0.032 kg CO₂/RM).';
-    } else {
-      return '💡 I can help you understand carbon footprints and suggest ways to reduce environmental impact. Try asking about specific categories or reduction strategies!';
+    if (msg.contains('reduce') || msg.contains('lower')) {
+      return '🌱 To reduce your carbon footprint: choose local products, '
+             'use public transport, and support eco-friendly businesses!';
     }
+    return '💡 Ask me about specific categories or reduction strategies!';
   }
 
   void _scrollToBottom() {
@@ -216,7 +207,7 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (_) => AlertDialog(
         title: const Text('Input Error'),
         content: Text(message),
         actions: [
@@ -263,7 +254,6 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
             if (_showResults) _buildResultsCard(),
             const SizedBox(height: 30),
             _buildAIChatSection(),
-            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -323,7 +313,8 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
           ),
           const SizedBox(height: 15),
           Text(
-            'Track your spending\'s environmental impact and get AI-powered suggestions to reduce your carbon footprint.',
+            'Track your spending’s environmental impact '
+            'and get AI-powered suggestions to reduce it.',
             style: TextStyle(
               fontSize: 14,
               color: textSecondary,
@@ -342,35 +333,21 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(
-            color: Colors.green.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
+          BoxShadow(color: Colors.green.withOpacity(0.1), blurRadius: 15, offset: const Offset(0,5)),
         ],
         border: Border.all(color: Colors.green.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             'Calculate Carbon Impact',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: textPrimary,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary),
           ),
           const SizedBox(height: 20),
-          
-          // Amount Input
-          Text(
+          const Text(
             'Amount (RM)',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textSecondary),
           ),
           const SizedBox(height: 8),
           TextField(
@@ -395,17 +372,10 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             ),
           ),
-          
           const SizedBox(height: 20),
-          
-          // Category Selection
-          Text(
+          const Text(
             'Spending Category',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: textSecondary,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: textSecondary),
           ),
           const SizedBox(height: 8),
           Container(
@@ -419,8 +389,9 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
               child: DropdownButton<String>(
                 value: _selectedCategory,
                 isExpanded: true,
-                items: _carbonFactors.keys.map((String category) {
-                  return DropdownMenuItem<String>(
+                items: CarbonCalculator.categories.map((category) {
+                  final f = CarbonCalculator.factorFor(category);
+                  return DropdownMenuItem(
                     value: category,
                     child: Row(
                       children: [
@@ -428,31 +399,18 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
                         const SizedBox(width: 12),
                         Text(category),
                         const Spacer(),
-                        Text(
-                          '${_carbonFactors[category]!.toStringAsFixed(3)} kg/RM',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: textSecondary,
-                          ),
-                        ),
+                        Text('${f.toStringAsFixed(3)} kg/RM', style: TextStyle(color: textSecondary)),
                       ],
                     ),
                   );
                 }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedCategory = newValue;
-                    });
-                  }
+                onChanged: (v) {
+                  if (v != null) setState(() => _selectedCategory = v);
                 },
               ),
             ),
           ),
-          
           const SizedBox(height: 25),
-          
-          // Calculate Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -461,27 +419,16 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
                 backgroundColor: primaryGreen,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 elevation: 2,
               ),
               child: _isCalculating
                   ? const SizedBox(
                       height: 20,
                       width: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
                     )
-                  : const Text(
-                      'Calculate Carbon Footprint',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                  : const Text('Calculate Carbon Footprint', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -492,108 +439,70 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
   Widget _buildResultsCard() {
     return AnimatedBuilder(
       animation: _resultScaleAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _resultScaleAnimation.value,
-          child: Container(
-            padding: const EdgeInsets.all(25),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [darkGreen, primaryGreen],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: primaryGreen.withOpacity(0.3),
-                  blurRadius: 15,
-                  offset: const Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.eco, color: Colors.white, size: 24),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Carbon Footprint Result',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'For RM${_amountController.text} in $_selectedCategory',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildResultStat(
-                      'CO₂ Impact',
-                      '${_calculatedCarbon.toStringAsFixed(3)} kg',
-                      Icons.cloud,
-                    ),
-                    Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
-                    _buildResultStat(
-                      'Per RM',
-                      '${_carbonFactors[_selectedCategory]!.toStringAsFixed(3)} kg',
-                      Icons.attach_money,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: Colors.white, size: 16),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _getImpactMessage(),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+      builder: (_, __) => Transform.scale(
+        scale: _resultScaleAnimation.value,
+        child: Container(
+          padding: const EdgeInsets.all(25),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [darkGreen, primaryGreen], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [BoxShadow(color: primaryGreen.withOpacity(0.3), blurRadius: 15, offset: const Offset(0,5))],
           ),
-        );
-      },
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                    child: const Icon(Icons.eco, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 15),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Carbon Footprint Result', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('For RM${_amountController.text} in $_selectedCategory', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildResultStat('CO₂ Impact', '${_calculatedCarbon.toStringAsFixed(3)} kg', Icons.cloud),
+                  Container(height: 40, width: 1, color: Colors.white.withOpacity(0.3)),
+                  _buildResultStat('Per RM', '${CarbonCalculator.factorFor(_selectedCategory).toStringAsFixed(3)} kg', Icons.attach_money),
+                ],
+              ),
+              const SizedBox(height: 15),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline, color: Colors.white, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _calculatedCarbon < 0.05
+                            ? 'Low impact! Minimal environmental impact.'
+                            : _calculatedCarbon < 0.15
+                                ? 'Moderate impact. Consider eco-friendly alternatives.'
+                                : 'High impact. Seek sustainable alternatives.',
+                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -602,105 +511,55 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
       children: [
         Icon(icon, color: Colors.white, size: 28),
         const SizedBox(height: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.8),
-            fontSize: 12,
-          ),
-        ),
+        Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+        Text(label, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
       ],
     );
-  }
-
-  String _getImpactMessage() {
-    if (_calculatedCarbon < 0.05) {
-      return 'Low impact! This spending has minimal environmental impact.';
-    } else if (_calculatedCarbon < 0.15) {
-      return 'Moderate impact. Consider eco-friendly alternatives where possible.';
-    } else {
-      return 'High impact. Look for sustainable alternatives to reduce your footprint.';
-    }
   }
 
   Widget _buildAIChatSection() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        color: Colors.white, borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), blurRadius: 10, offset: const Offset(0,5))],
         border: Border.all(color: Colors.grey.shade100),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // header
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [primaryGreen.withOpacity(0.1), lightGreen.withOpacity(0.05)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
+              gradient: LinearGradient(colors: [primaryGreen.withOpacity(0.1), lightGreen.withOpacity(0.05)],
+                begin: Alignment.topLeft, end: Alignment.bottomRight),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: primaryGreen.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
+                  decoration: BoxDecoration(color: primaryGreen.withOpacity(0.2), shape: BoxShape.circle),
                   child: const Icon(Icons.smart_toy, color: primaryGreen, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'AI Sustainability Assistant',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: textPrimary,
-                      ),
-                    ),
+                    const Text('AI Sustainability Assistant',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textPrimary)),
                     Row(
                       children: [
                         Container(
-                          width: 8,
-                          height: 8,
+                          width: 8, height: 8,
                           decoration: BoxDecoration(
                             color: _serverAvailable ? Colors.green : Colors.orange,
                             shape: BoxShape.circle,
                           ),
                         ),
                         const SizedBox(width: 6),
-                        Text(
-                          _serverAvailable ? 'AI Online' : 'Offline Mode',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: textSecondary,
-                          ),
-                        ),
+                        Text(_serverAvailable ? 'AI Online' : 'Offline Mode',
+                            style: TextStyle(fontSize: 12, color: textSecondary)),
                       ],
                     ),
                   ],
@@ -708,8 +567,8 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
               ],
             ),
           ),
-          
-          // Chat Messages
+
+          // chat area
           Container(
             height: 200,
             padding: const EdgeInsets.all(16),
@@ -718,70 +577,44 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.chat_bubble_outline, 
-                             color: Colors.grey.shade400, size: 32),
+                        Icon(Icons.chat_bubble_outline, color: Colors.grey.shade400, size: 32),
                         const SizedBox(height: 8),
-                        Text(
-                          'Ask me about carbon footprints,\nsustainable spending, or eco tips!',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
-                        ),
+                        Text('Ask me about carbon footprints,\nsustainable tips!',
+                            textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
                       ],
                     ),
                   )
                 : ListView.builder(
                     itemCount: _chatMessages.length,
-                    itemBuilder: (context, index) {
-                      return _buildChatBubble(_chatMessages[index]);
-                    },
+                    itemBuilder: (_, i) => _buildChatBubble(_chatMessages[i]),
                   ),
           ),
-          
+
           if (_isChatting)
-            Container(
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
                   Container(
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      color: primaryGreen.withOpacity(0.2),
-                      shape: BoxShape.circle,
-                    ),
+                    width: 24, height: 24,
+                    decoration: BoxDecoration(color: primaryGreen.withOpacity(0.2), shape: BoxShape.circle),
                     child: const Icon(Icons.smart_toy, color: primaryGreen, size: 14),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'AI is thinking...',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: textSecondary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
+                  Text('AI is thinking...', style: TextStyle(fontSize: 12, color: textSecondary, fontStyle: FontStyle.italic)),
                 ],
               ),
             ),
-          
-          // Chat Input
-          Container(
+
+          // input
+          Padding(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _chatController,
+                    onSubmitted: (_) => _sendChatMessage(),
                     decoration: InputDecoration(
                       hintText: 'Ask about sustainability tips...',
                       hintStyle: TextStyle(color: Colors.grey.shade500),
@@ -797,23 +630,15 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
                       fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     ),
-                    onSubmitted: (_) => _sendChatMessage(),
                   ),
                 ),
                 const SizedBox(width: 8),
                 Container(
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [primaryGreen, darkGreen],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    gradient: LinearGradient(colors: [primaryGreen, darkGreen], begin: Alignment.topLeft, end: Alignment.bottomRight),
                     shape: BoxShape.circle,
                   ),
-                  child: IconButton(
-                    onPressed: _sendChatMessage,
-                    icon: const Icon(Icons.send, color: Colors.white),
-                  ),
+                  child: IconButton(onPressed: _sendChatMessage, icon: const Icon(Icons.send, color: Colors.white)),
                 ),
               ],
             ),
@@ -824,20 +649,17 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
   }
 
   Widget _buildChatBubble(ChatMessage message) {
+    final align = message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
+        mainAxisAlignment: align,
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: message.isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
           if (!message.isUser) ...[
             Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: primaryGreen.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
+              width: 24, height: 24,
+              decoration: BoxDecoration(color: primaryGreen.withOpacity(0.2), shape: BoxShape.circle),
               child: const Icon(Icons.smart_toy, color: primaryGreen, size: 14),
             ),
             const SizedBox(width: 8),
@@ -851,22 +673,15 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
               ),
               child: Text(
                 message.text,
-                style: TextStyle(
-                  color: message.isUser ? Colors.white : textPrimary,
-                  fontSize: 13,
-                ),
+                style: TextStyle(color: message.isUser ? Colors.white : textPrimary, fontSize: 13),
               ),
             ),
           ),
           if (message.isUser) ...[
             const SizedBox(width: 8),
             Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                shape: BoxShape.circle,
-              ),
+              width: 24, height: 24,
+              decoration: BoxDecoration(color: Colors.grey.shade300, shape: BoxShape.circle),
               child: Icon(Icons.person, color: Colors.grey.shade600, size: 14),
             ),
           ],
@@ -877,29 +692,21 @@ Please provide helpful advice about carbon footprint, environmental impact, or s
 
   Widget _getCategoryIcon(String category) {
     switch (category) {
-      case 'Transportation':
-        return const Icon(Icons.directions_car, size: 16, color: textSecondary);
-      case 'Food & Dining':
-        return const Icon(Icons.restaurant, size: 16, color: textSecondary);
-      case 'Utilities':
-        return const Icon(Icons.electrical_services, size: 16, color: textSecondary);
-      case 'Shopping':
-        return const Icon(Icons.shopping_bag, size: 16, color: textSecondary);
-      case 'Entertainment':
-        return const Icon(Icons.movie, size: 16, color: textSecondary);
-      case 'Healthcare':
-        return const Icon(Icons.local_hospital, size: 16, color: textSecondary);
-      case 'Education':
-        return const Icon(Icons.school, size: 16, color: textSecondary);
-      default:
-        return const Icon(Icons.category, size: 16, color: textSecondary);
+      case 'Transportation': return const Icon(Icons.directions_car,     size: 16, color: textSecondary);
+      case 'Food & Dining':  return const Icon(Icons.restaurant,         size: 16, color: textSecondary);
+      case 'Utilities':      return const Icon(Icons.electrical_services,size: 16, color: textSecondary);
+      case 'Shopping':       return const Icon(Icons.shopping_bag,       size: 16, color: textSecondary);
+      case 'Entertainment':  return const Icon(Icons.movie,              size: 16, color: textSecondary);
+      case 'Healthcare':     return const Icon(Icons.local_hospital,     size: 16, color: textSecondary);
+      case 'Education':      return const Icon(Icons.school,             size: 16, color: textSecondary);
+      default:               return const Icon(Icons.category,           size: 16, color: textSecondary);
     }
   }
 }
 
 class ChatMessage {
   final String text;
-  final bool isUser;
+  final bool   isUser;
   final DateTime timestamp;
 
   ChatMessage({
