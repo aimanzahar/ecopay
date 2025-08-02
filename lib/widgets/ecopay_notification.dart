@@ -63,10 +63,10 @@ class _EcoPayNotificationState extends State<EcoPayNotification>
     _slideController.forward();
     _fadeController.forward();
 
-    // Auto dismiss after 8 seconds if no interaction
-    Future.delayed(const Duration(seconds: 8), () {
+    // Auto skip after 5 seconds if no interaction
+    Future.delayed(const Duration(seconds: 5), () {
       if (mounted && !_isDragging) {
-        _dismiss();
+        _autoSkip();
       }
     });
   }
@@ -82,6 +82,12 @@ class _EcoPayNotificationState extends State<EcoPayNotification>
     await _slideController.reverse();
     await _fadeController.reverse();
     widget.onDismiss();
+  }
+
+  void _autoSkip() async {
+    await _slideController.reverse();
+    await _fadeController.reverse();
+    widget.onSkip();
   }
 
   void _handlePanUpdate(DragUpdateDetails details) {
