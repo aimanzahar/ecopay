@@ -59,3 +59,4 @@ pubspec.lock
 windows/flutter/generated_plugin_registrant.cc
 windows/flutter/generated_plugins.cmake
 /.kilocode/rules
+.kilocode/mcp.json
