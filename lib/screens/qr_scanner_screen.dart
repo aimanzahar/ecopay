@@ -638,6 +638,9 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     String merchantName,
     Map<String, String> qrData,
   ) {
+    // Cancel any pending timeout timer to prevent "No QR Code Found" dialog
+    _timeoutTimer?.cancel();
+    
     final amount = double.tryParse(qrData['transactionAmount'] ?? '0.0') ?? 0.0;
 
     // Dynamic round-up: round to the nearest RM 0.50 or RM 1.00
