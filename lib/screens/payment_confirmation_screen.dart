@@ -518,22 +518,23 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
       final double totalAmount = amount + ecoPayAmount;
 
       // Process payment using DatabaseHelper
-      final success = await _databaseHelper.processPayment(
+      final transactionId = await _databaseHelper.processPayment(
         widget.merchantName,
         totalAmount,
       );
 
-      if (success) {
+      if (transactionId != null) {
         if (_enableEcoPay && ecoPayAmount > 0) {
-          print('DEBUG: PaymentConfirmation - Creating contribution record');
+          print('DEBUG: PaymentConfirmation - Creating contribution record with transaction ID: $transactionId');
           final contribution = Contribution(
             userId: 1, // Assuming user ID 1
             projectId: 1, // Assuming project ID 1
             amount: ecoPayAmount,
+            transactionId: transactionId, // Link contribution to transaction
             timestamp: DateTime.now(),
           );
           await _databaseHelper.insertContribution(contribution);
-          print('DEBUG: PaymentConfirmation - Contribution record created');
+          print('DEBUG: PaymentConfirmation - Contribution record created with transaction ID');
         }
         // Payment successful - show receipt modal
         await _showReceiptModal(totalAmount);

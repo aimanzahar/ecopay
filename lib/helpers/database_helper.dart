@@ -602,7 +602,7 @@ class DatabaseHelper {
     return null;
   }
 
-  Future<bool> processPayment(String merchantName, double amount) async {
+  Future<String?> processPayment(String merchantName, double amount) async {
     print('DEBUG: DatabaseHelper.processPayment - Starting payment process');
     print('DEBUG: Merchant: $merchantName, Amount: $amount');
 
@@ -614,7 +614,7 @@ class DatabaseHelper {
 
     if (currentBalance.amount < amount) {
       print('DEBUG: Insufficient balance - payment failed');
-      return false; // Insufficient balance
+      return null; // Insufficient balance
     }
 
     // Calculate new balance
@@ -652,7 +652,7 @@ class DatabaseHelper {
     print(
       'DEBUG: Payment processed successfully - balance updated to: $newBalance',
     );
-    return true;
+    return transactionId; // Return the transaction ID for linking to contributions
   }
 
   Future<bool> hasInsufficientBalance(double amount) async {
