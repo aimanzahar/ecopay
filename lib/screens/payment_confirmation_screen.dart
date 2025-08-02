@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../helpers/database_helper.dart';
+import '../helpers/merchant_helper.dart';
 import '../models/balance.dart';
-import '../models/contribution.dart';
 import '../models/contribution.dart';
 import '../models/transaction.dart';
 import '../widgets/receipt_modal.dart';
@@ -38,6 +38,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   void initState() {
     super.initState();
     _loadBalance();
+    _initializeMerchantSpecificSettings();
     
     // Initialize EcoPay settings
     if (widget.ecoPayAmount != null && widget.ecoPayAmount! > 0) {
@@ -45,6 +46,11 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
       _customEcoPayAmount = widget.ecoPayAmount!;
       _ecoPayController.text = widget.ecoPayAmount!.toStringAsFixed(2);
     }
+  }
+
+  Future<void> _initializeMerchantSpecificSettings() async {
+    // Initialize F&B projects if needed
+    await MerchantHelper.initializeFnbProjects();
   }
 
   @override
@@ -178,7 +184,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            widget.merchantName,
+            MerchantHelper.getDisplayName(widget.merchantName),
             style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -190,13 +196,17 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: MerchantHelper.isFoodAndBeverageCompany(widget.merchantName)
+                ? Colors.orange.withOpacity(0.1)
+                : Colors.green.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Text(
-              'DUITNOW QR',
+            child: Text(
+              MerchantHelper.getMerchantCategory(widget.merchantName),
               style: TextStyle(
-                color: Colors.green,
+                color: MerchantHelper.isFoodAndBeverageCompany(widget.merchantName)
+                  ? Colors.orange.shade700
+                  : Colors.green,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -369,9 +379,11 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Help protect our environment by contributing to eco-friendly projects',
-            style: TextStyle(
+          Text(
+            MerchantHelper.isFoodAndBeverageCompany(widget.merchantName)
+              ? 'Support sustainable food systems and reduce environmental impact in the F&B industry'
+              : 'Help protect our environment by contributing to eco-friendly projects',
+            style: const TextStyle(
               fontSize: 14,
               color: Colors.black54,
             ),
@@ -388,8 +400,13 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                       _customEcoPayAmount = 0.0;
                       _ecoPayController.clear();
                     } else {
-                      _customEcoPayAmount = 0.50;
-                      _ecoPayController.text = '0.50';
+                      // Use merchant-specific recommended amount
+                      double recommendedAmount = MerchantHelper.getRecommendedESGAmount(
+                        widget.merchantName,
+                        double.tryParse(_amountController.text) ?? 50.0
+                      );
+                      _customEcoPayAmount = recommendedAmount;
+                      _ecoPayController.text = recommendedAmount.toStringAsFixed(2);
                     }
                   });
                 },
