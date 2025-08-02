@@ -1,0 +1,502 @@
+{
+  "@@locale": "en",
+  "appTitle": "EcoPay",
+  "@appTitle": {
+    "description": "The title of the application"
+  },
+  
+  "ewalletBalance": "eWallet balance",
+  "@ewalletBalance": {
+    "description": "Text for eWallet balance section"
+  },
+  
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading indicator text"
+  },
+  
+  "reload": "Reload",
+  "@reload": {
+    "description": "Button text for reloading balance"
+  },
+  
+  "transactionHistory": "Transaction History",
+  "@transactionHistory": {
+    "description": "Text for transaction history link"
+  },
+  
+  "scan": "Scan",
+  "@scan": {
+    "description": "Scan QR code button"
+  },
+  
+  "pay": "Pay",
+  "@pay": {
+    "description": "Pay button"
+  },
+  
+  "transfer": "Transfer",
+  "@transfer": {
+    "description": "Transfer button"
+  },
+  
+  "goPlus": "GO+",
+  "@goPlus": {
+    "description": "GO+ service button"
+  },
+  
+  "goals": "Goals",
+  "@goals": {
+    "description": "Goals section"
+  },
+  
+  "vouchers": "Vouchers",
+  "@vouchers": {
+    "description": "Vouchers section"
+  },
+  
+  "oneReward": "1 Reward",
+  "@oneReward": {
+    "description": "One reward text"
+  },
+  
+  "threeVouchers": "3 Vouchers",
+  "@threeVouchers": {
+    "description": "Three vouchers text"
+  },
+  
+  "highlights": "Highlights",
+  "@highlights": {
+    "description": "Highlights section title"
+  },
+  
+  "promotionalContent": "Promotional Content",
+  "@promotionalContent": {
+    "description": "Placeholder for promotional content"
+  },
+  
+  "editBalance": "Edit Balance",
+  "@editBalance": {
+    "description": "Dialog title for editing balance"
+  },
+  
+  "enterAmountToAdd": "Enter the amount to add to your balance:",
+  "@enterAmountToAdd": {
+    "description": "Dialog text for amount input"
+  },
+  
+  "amountRM": "Amount (RM)",
+  "@amountRM": {
+    "description": "Label for amount input field"
+  },
+  
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  
+  "addBalance": "Add Balance",
+  "@addBalance": {
+    "description": "Add balance button text"
+  },
+  
+  "pleaseEnterAmount": "Please enter an amount",
+  "@pleaseEnterAmount": {
+    "description": "Validation error message"
+  },
+  
+  "pleaseEnterValidNumber": "Please enter a valid number",
+  "@pleaseEnterValidNumber": {
+    "description": "Validation error message"
+  },
+  
+  "amountMustBeGreaterThanZero": "Amount must be greater than 0",
+  "@amountMustBeGreaterThanZero": {
+    "description": "Validation error message"
+  },
+  
+  "amountCannotExceed": "Amount cannot exceed RM 10,000",
+  "@amountCannotExceed": {
+    "description": "Validation error message"
+  },
+  
+  "welcomeToEcoPay": "🌱 Welcome to EcoPay",
+  "@welcomeToEcoPay": {
+    "description": "Welcome message in EcoPay screen"
+  },
+  
+  "yourSustainablePaymentSolution": "Your sustainable payment solution",
+  "@yourSustainablePaymentSolution": {
+    "description": "Subtitle in EcoPay screen"
+  },
+  
+  "co2Saved": "CO₂ Saved",
+  "@co2Saved": {
+    "description": "CO2 saved metric"
+  },
+  
+  "transactions": "Transactions",
+  "@transactions": {
+    "description": "Transactions metric"
+  },
+  
+  "myContribution": "My Contribution",
+  "@myContribution": {
+    "description": "My contribution button"
+  },
+  
+  "history": "History",
+  "@history": {
+    "description": "History button"
+  },
+  
+  "gamification": "Gamification",
+  "@gamification": {
+    "description": "Gamification section title"
+  },
+  
+  "leaderboard": "Leaderboard",
+  "@leaderboard": {
+    "description": "Leaderboard feature"
+  },
+  
+  "challenges": "Challenges",
+  "@challenges": {
+    "description": "Challenges feature"
+  },
+  
+  "achievements": "Achievements",
+  "@achievements": {
+    "description": "Achievements feature"
+  },
+  
+  "ecoPayTree": "EcoPayTree",
+  "@ecoPayTree": {
+    "description": "EcoPayTree feature"
+  },
+  
+  "esgFeatures": "ESG Features",
+  "@esgFeatures": {
+    "description": "ESG Features section title"
+  },
+  
+  "environmental": "Environmental",
+  "@environmental": {
+    "description": "Environmental ESG category"
+  },
+  
+  "social": "Social",
+  "@social": {
+    "description": "Social ESG category"
+  },
+  
+  "governance": "Governance",
+  "@governance": {
+    "description": "Governance ESG category"
+  },
+  
+  "carbonFootprint": "Carbon Footprint",
+  "@carbonFootprint": {
+    "description": "Carbon footprint section title"
+  },
+  
+  "thisMonth": "This Month",
+  "@thisMonth": {
+    "description": "This month period"
+  },
+  
+  "calculate": "Calculate",
+  "@calculate": {
+    "description": "Calculate button"
+  },
+  
+  "vsLastMonth": "↓ 23% vs last month",
+  "@vsLastMonth": {
+    "description": "Comparison with last month"
+  },
+  
+  "greenRewards": "Green Rewards",
+  "@greenRewards": {
+    "description": "Green rewards section title"
+  },
+  
+  "redeemPointsFor": "Redeem points for sustainable products & services",
+  "@redeemPointsFor": {
+    "description": "Description for green rewards"
+  },
+  
+  "redeem": "Redeem",
+  "@redeem": {
+    "description": "Redeem button"
+  },
+  
+  "pointsToNextReward": "253 points to next reward",
+  "@pointsToNextReward": {
+    "description": "Points needed for next reward"
+  },
+  
+  "sustainabilityTips": "Sustainability Tips",
+  "@sustainabilityTips": {
+    "description": "Sustainability tips section title"
+  },
+  
+  "useDigitalReceipts": "Use digital receipts",
+  "@useDigitalReceipts": {
+    "description": "Sustainability tip"
+  },
+  
+  "saveUpToCO2": "Save up to 2.5kg CO₂ per year",
+  "@saveUpToCO2": {
+    "description": "Sustainability tip description"
+  },
+  
+  "walkToNearbyStores": "Walk to nearby stores",
+  "@walkToNearbyStores": {
+    "description": "Sustainability tip"
+  },
+  
+  "reduceTransportEmissions": "Reduce transport emissions by 65%",
+  "@reduceTransportEmissions": {
+    "description": "Sustainability tip description"
+  },
+  
+  "chooseEcoFriendlyBusinesses": "Choose eco-friendly businesses",
+  "@chooseEcoFriendlyBusinesses": {
+    "description": "Sustainability tip"
+  },
+  
+  "supportSustainablePractices": "Support sustainable practices",
+  "@supportSustainablePractices": {
+    "description": "Sustainability tip description"
+  },
+  
+  "enableEcoPay": "Enable EcoPay",
+  "@enableEcoPay": {
+    "description": "Enable EcoPay switch text"
+  },
+  
+  "activateEcoPay": "Activate EcoPay",
+  "@activateEcoPay": {
+    "description": "Activate EcoPay title"
+  },
+  
+  "roundUpPayments": "Round up your payments to support verified green projects. Track your CO₂ savings, earn rewards, and join a sustainability-driven community!",
+  "@roundUpPayments": {
+    "description": "EcoPay activation description"
+  },
+  
+  "scanQRCode": "Scan QR Code",
+  "@scanQRCode": {
+    "description": "Scan QR code screen title"
+  },
+  
+  "pointCameraAtQR": "Point your camera at a DUITNOW QR code",
+  "@pointCameraAtQR": {
+    "description": "QR scanner instruction"
+  },
+  
+  "tapGalleryIcon": "Or tap the gallery icon to select an image",
+  "@tapGalleryIcon": {
+    "description": "Gallery selection instruction"
+  },
+  
+  "processingQRCode": "Processing QR Code...",
+  "@processingQRCode": {
+    "description": "Processing QR code message"
+  },
+  
+  "ecoLeaderboard": "Eco Leaderboard",
+  "@ecoLeaderboard": {
+    "description": "Leaderboard screen title"
+  },
+  
+  "weekly": "Weekly",
+  "@weekly": {
+    "description": "Weekly tab"
+  },
+  
+  "monthly": "Monthly",
+  "@monthly": {
+    "description": "Monthly tab"
+  },
+  
+  "allTime": "All Time",
+  "@allTime": {
+    "description": "All time tab"
+  },
+  
+  "friends": "Friends",
+  "@friends": {
+    "description": "Friends tab"
+  },
+  
+  "currentRank": "Current Rank",
+  "@currentRank": {
+    "description": "Current rank stat"
+  },
+  
+  "totalPoints": "Total Points",
+  "@totalPoints": {
+    "description": "Total points stat"
+  },
+  
+  "thisWeek": "This Week",
+  "@thisWeek": {
+    "description": "This week stat"
+  },
+  
+  "friendsBeat": "Friends Beat",
+  "@friendsBeat": {
+    "description": "Friends beat stat"
+  },
+  
+  "points": "points",
+  "@points": {
+    "description": "Points text"
+  },
+  
+  "addFriends": "Add Friends",
+  "@addFriends": {
+    "description": "Add friends button"
+  },
+  
+  "yourEcoAchievements": "Your Eco Achievements",
+  "@yourEcoAchievements": {
+    "description": "Achievements screen title"
+  },
+  
+  "unlocked": "Unlocked",
+  "@unlocked": {
+    "description": "Unlocked tab"
+  },
+  
+  "inProgress": "In Progress",
+  "@inProgress": {
+    "description": "In progress tab"
+  },
+  
+  "categories": "Categories",
+  "@categories": {
+    "description": "Categories tab"
+  },
+  
+  "completed": "Completed",
+  "@completed": {
+    "description": "Completed stat"
+  },
+  
+  "pointsEarned": "points earned",
+  "@pointsEarned": {
+    "description": "Points earned text"
+  },
+  
+  "bronze": "Bronze",
+  "@bronze": {
+    "description": "Bronze tier"
+  },
+  
+  "silver": "Silver",
+  "@silver": {
+    "description": "Silver tier"
+  },
+  
+  "gold": "Gold",
+  "@gold": {
+    "description": "Gold tier"
+  },
+  
+  "platinum": "Platinum",
+  "@platinum": {
+    "description": "Platinum tier"
+  },
+  
+  "diamond": "Diamond",
+  "@diamond": {
+    "description": "Diamond tier"
+  },
+  
+  "ecoPayAssistant": "EcoPay Assistant",
+  "@ecoPayAssistant": {
+    "description": "AI assistant name"
+  },
+  
+  "poweredByTrees": "Powered by Trees 🌱",
+  "@poweredByTrees": {
+    "description": "AI assistant status"
+  },
+  
+  "offlineMode": "Offline mode 🌱",
+  "@offlineMode": {
+    "description": "AI assistant offline status"
+  },
+  
+  "language": "Language",
+  "@language": {
+    "description": "Language settings"
+  },
+  
+  "selectLanguage": "Select Language",
+  "@selectLanguage": {
+    "description": "Select language title"
+  },
+  
+  "english": "English",
+  "@english": {
+    "description": "English language option"
+  },
+  
+  "bahasaMelayu": "Bahasa Melayu",
+  "@bahasaMelayu": {
+    "description": "Bahasa Melayu language option"
+  },
+  
+  "mandarin": "中文 (简体)",
+  "@mandarin": {
+    "description": "Mandarin language option"
+  },
+  
+  "tamil": "தமிழ்",
+  "@tamil": {
+    "description": "Tamil language option"
+  },
+  
+  "languageSettings": "Language Settings",
+  "@languageSettings": {
+    "description": "Language settings screen title"
+  },
+  
+  "changingLanguage": "Changing Language...",
+  "@changingLanguage": {
+    "description": "Loading message when changing language"
+  },
+  
+  "languageChanged": "Language changed successfully!",
+  "@languageChanged": {
+    "description": "Success message after language change"
+  },
+  
+  "selected": "Selected",
+  "@selected": {
+    "description": "Selected indicator text"
+  },
+  
+  "englishDescription": "English (International)",
+  "@englishDescription": {
+    "description": "Description for English language"
+  },
+  
+  "malayDescription": "Bahasa Melayu (Malaysia)",
+  "@malayDescription": {
+    "description": "Description for Malay language"
+  },
+  
+  "chineseDescription": "中文 (简体中文)",
+  "@chineseDescription": {
+    "description": "Description for Chinese language"
+  },
+  
+  "tamilDescription": "தமிழ் (Tamil)",
+  "@tamilDescription": {
+    "description": "Description for Tamil language"
+  }
+}

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../l10n/app_localizations.dart';
 import '../helpers/database_helper.dart';
 import '../models/balance.dart';
 import 'qr_scanner_screen.dart';
 import 'ecopay_screen.dart';
+import 'language_settings_screen.dart';
 
 class TouchNGoHomepage extends StatefulWidget {
   const TouchNGoHomepage({super.key});
@@ -64,15 +66,15 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Edit Balance'),
+          title: Text(AppLocalizations.of(context)!.editBalance),
           content: Form(
             key: formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text(
-                  'Enter the amount to add to your balance:',
-                  style: TextStyle(fontSize: 14),
+                Text(
+                  AppLocalizations.of(context)!.enterAmountToAdd,
+                  style: const TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -80,25 +82,25 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                   keyboardType: const TextInputType.numberWithOptions(
                     decimal: true,
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Amount (RM)',
+                  decoration: InputDecoration(
+                    labelText: AppLocalizations.of(context)!.amountRM,
                     hintText: '0.00',
                     prefixText: 'RM ',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter an amount';
+                      return AppLocalizations.of(context)!.pleaseEnterAmount;
                     }
                     final double? amount = double.tryParse(value);
                     if (amount == null) {
-                      return 'Please enter a valid number';
+                      return AppLocalizations.of(context)!.pleaseEnterValidNumber;
                     }
                     if (amount <= 0) {
-                      return 'Amount must be greater than 0';
+                      return AppLocalizations.of(context)!.amountMustBeGreaterThanZero;
                     }
                     if (amount > 10000) {
-                      return 'Amount cannot exceed RM 10,000';
+                      return AppLocalizations.of(context)!.amountCannotExceed;
                     }
                     return null;
                   },
@@ -108,13 +110,13 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             ElevatedButton(
-              child: const Text('Add Balance'),
+              child: Text(AppLocalizations.of(context)!.addBalance),
               onPressed: () async {
                 if (formKey.currentState!.validate()) {
                   final double amount = double.parse(amountController.text);
@@ -157,6 +159,64 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       }
     }
   }
+
+  void _showUserMenu() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'User Menu',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.language, color: Colors.blue),
+                title: Text(AppLocalizations.of(context)!.language),
+                trailing: const Icon(Icons.arrow_forward_ios),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LanguageSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -231,15 +291,15 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'eWallet balance',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  Text(
+                    AppLocalizations.of(context)!.ewalletBalance,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   const SizedBox(height: 4),
                   _isLoading
-                      ? const Text(
-                          'Loading...',
-                          style: TextStyle(
+                      ? Text(
+                          AppLocalizations.of(context)!.loading,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
@@ -265,18 +325,21 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                         ),
                 ],
               ),
-              Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: Image.asset(
-                    'assets/images/profile.png',
-                    fit: BoxFit.cover,
+              GestureDetector(
+                onTap: _showUserMenu,
+                child: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(25),
+                    child: Image.asset(
+                      'assets/images/profile.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -297,14 +360,14 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(25),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add, color: Colors.blue, size: 20),
-                      SizedBox(width: 8),
+                      const Icon(Icons.add, color: Colors.blue, size: 20),
+                      const SizedBox(width: 8),
                       Text(
-                        'Reload',
-                        style: TextStyle(
+                        AppLocalizations.of(context)!.reload,
+                        style: const TextStyle(
                           color: Colors.blue,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -319,19 +382,19 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                 onTap: () {
                   // TODO: Navigate to transaction history page
                 },
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Transaction History',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.transactionHistory,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(
+                    const SizedBox(width: 8),
+                    const Icon(
                       Icons.arrow_forward_ios,
                       color: Colors.white,
                       size: 14,
@@ -359,7 +422,7 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
         children: [
           _buildServiceIcon(
             Icons.qr_code_scanner,
-            'Scan',
+            AppLocalizations.of(context)!.scan,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
@@ -368,9 +431,9 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
               );
             },
           ),
-          _buildServiceIcon(Icons.payment, 'Pay'),
-          _buildServiceIcon(Icons.swap_horiz, 'Transfer'),
-          _buildServiceIcon(Icons.star, 'GO+'),
+          _buildServiceIcon(Icons.payment, AppLocalizations.of(context)!.pay),
+          _buildServiceIcon(Icons.swap_horiz, AppLocalizations.of(context)!.transfer),
+          _buildServiceIcon(Icons.star, AppLocalizations.of(context)!.goPlus),
         ],
       ),
     );
@@ -417,10 +480,10 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                 children: [
                   const Icon(Icons.emoji_events, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Goals',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.goals,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -436,9 +499,9 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      '1 Reward',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context)!.oneReward,
+                      style: const TextStyle(
                         color: Color(0xFF1E40AF),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -462,10 +525,10 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                 children: [
                   const Icon(Icons.local_offer, color: Colors.white, size: 24),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Vouchers',
-                      style: TextStyle(
+                      AppLocalizations.of(context)!.vouchers,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -481,9 +544,9 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Text(
-                      '3 Vouchers',
-                      style: TextStyle(
+                    child: Text(
+                      AppLocalizations.of(context)!.threeVouchers,
+                      style: const TextStyle(
                         color: Color(0xFFEA580C),
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -617,9 +680,9 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Highlights',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.highlights,
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -634,10 +697,10 @@ class _TouchNGoHomepageState extends State<TouchNGoHomepage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white.withOpacity(0.2)),
             ),
-            child: const Center(
+            child: Center(
               child: Text(
-                'Promotional Content',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
+                AppLocalizations.of(context)!.promotionalContent,
+                style: const TextStyle(color: Colors.white70, fontSize: 16),
               ),
             ),
           ),

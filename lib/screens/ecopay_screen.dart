@@ -3,6 +3,7 @@ import '../helpers/database_helper.dart';
 import '../models/user.dart';
 import '../models/contribution.dart';
 import '../services/ollama_service.dart';
+import '../l10n/app_localizations.dart';
 import 'achievements_screen.dart';
 import 'challenges_screen.dart';
 import 'leaderboard_screen.dart';
@@ -13,6 +14,7 @@ import 'my_contribution_screen.dart';
 import 'redeem_screen.dart';
 import 'ecopay_tree_screen.dart';
 import 'carbon_calculator_screen.dart';
+import 'language_settings_screen.dart';
 
 // Color Scheme Constants
 const Color primaryGreen = Color(0xFF2E7D32); // Main green
@@ -137,15 +139,29 @@ class _EcoPayScreenState extends State<EcoPayScreen>
           icon: const Icon(Icons.arrow_back, color: Colors.green),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'EcoPay',
-          style: TextStyle(
+        title: Text(
+          AppLocalizations.of(context)!.appTitle,
+          style: const TextStyle(
             color: textPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 24,
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language, color: primaryGreen),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const LanguageSettingsScreen(),
+                ),
+              );
+            },
+            tooltip: 'Language Settings',
+          ),
+        ],
       ),
       // 2) Wrap in a Stack so we can overlay the AI icon:
       body: Stack(
@@ -283,7 +299,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '🌱 Welcome to EcoPay',
+                  AppLocalizations.of(context)!.welcomeToEcoPay,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -292,7 +308,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Your sustainable payment solution',
+                  AppLocalizations.of(context)!.yourSustainablePaymentSolution,
                   style: TextStyle(fontSize: 14, color: Colors.green.shade600),
                 ),
               ],
@@ -328,14 +344,14 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatVisual(
-            'CO₂ Saved',
+            AppLocalizations.of(context)!.co2Saved,
             '${co2Offset.toStringAsFixed(1)}kg',
             Icons.eco,
             primaryGreen,
           ),
           Container(height: 50, width: 1, color: Colors.green.shade200),
           _buildStatVisual(
-            'Transactions',
+            AppLocalizations.of(context)!.transactions,
             '${_contributions.length}',
             Icons.receipt,
             accentBlue,
@@ -385,7 +401,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         children: [
           Expanded(
             child: _buildActionButton(
-              'My Contribution',
+              AppLocalizations.of(context)!.myContribution,
               Icons.eco,
               Colors.white,
               () {
@@ -401,7 +417,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
           const SizedBox(width: 15),
           Expanded(
             child: _buildActionButton(
-              'History',
+              AppLocalizations.of(context)!.history,
               Icons.history,
               Colors.white,
               () {
@@ -458,7 +474,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            'ESG Features',
+            AppLocalizations.of(context)!.esgFeatures,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -474,7 +490,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             padding: const EdgeInsets.symmetric(horizontal: 15),
             children: [
               _buildESGFeatureItem(
-                'Environmental',
+                AppLocalizations.of(context)!.environmental,
                 Icons.eco,
                 primaryGreen,
                 () {
@@ -487,7 +503,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                 },
               ),
               const SizedBox(width: 15),
-              _buildESGFeatureItem('Social', Icons.people, accentBlue, () {
+              _buildESGFeatureItem(AppLocalizations.of(context)!.social, Icons.people, accentBlue, () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -497,7 +513,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
               }),
               const SizedBox(width: 15),
               _buildESGFeatureItem(
-                'Governance',
+                AppLocalizations.of(context)!.governance,
                 Icons.business,
                 Colors.purple,
                 () {
@@ -565,7 +581,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Text(
-            'Gamification',
+            AppLocalizations.of(context)!.gamification,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -581,21 +597,21 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             padding: const EdgeInsets.symmetric(horizontal: 15),
             children: [
               _buildGamificationItem(
-                'Leaderboard',
+                AppLocalizations.of(context)!.leaderboard,
                 Icons.leaderboard,
                 accentAmber,
                 LeaderboardScreen(),
               ),
               const SizedBox(width: 15),
               _buildGamificationItem(
-                'Challenges',
+                AppLocalizations.of(context)!.challenges,
                 Icons.flag,
                 accentBlue,
                 ChallengesScreen(),
               ),
               const SizedBox(width: 15),
               _buildGamificationItem(
-                'Achievements',
+                AppLocalizations.of(context)!.achievements,
                 Icons.workspace_premium,
                 Colors.purple,
                 AchievementsScreen(),
@@ -730,7 +746,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                       const Icon(Icons.eco, color: Colors.white, size: 28),
                       const SizedBox(width: 12),
                       Text(
-                        'Carbon Footprint',
+                        AppLocalizations.of(context)!.carbonFootprint,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -747,7 +763,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'This Month',
+                              AppLocalizations.of(context)!.thisMonth,
                               style: TextStyle(
                                 fontSize: 14,
                                 color: Colors.white70,
@@ -777,7 +793,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                   child: Text(
-                                    'Calculate',
+                                    AppLocalizations.of(context)!.calculate,
                                     style: TextStyle(
                                       fontSize: 10,
                                       color: Colors.white,
@@ -830,7 +846,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Green Rewards',
+                AppLocalizations.of(context)!.greenRewards,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -886,7 +902,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
                     vertical: 12,
                   ),
                 ),
-                child: const Text('Redeem'),
+                child: Text(AppLocalizations.of(context)!.redeem),
               ),
             ],
           ),
@@ -934,7 +950,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Sustainability Tips',
+            AppLocalizations.of(context)!.sustainabilityTips,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1019,7 +1035,7 @@ class _EcoPayScreenState extends State<EcoPayScreen>
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Enable EcoPay',
+              AppLocalizations.of(context)!.enableEcoPay,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -1052,9 +1068,9 @@ class _EcoPayScreenState extends State<EcoPayScreen>
             fit: BoxFit.contain,
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Activate EcoPay',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context)!.activateEcoPay,
+            style: const TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: primaryGreen,
