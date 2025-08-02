@@ -8,6 +8,7 @@ import 'dart:math';
 import '../helpers/database_helper.dart';
 import '../models/user.dart';
 import '../utils/duitnow_qr_parser.dart';
+import '../widgets/ecopay_notification.dart';
 import 'payment_confirmation_screen.dart';
 
 class QrScannerScreen extends StatefulWidget {
@@ -35,6 +36,11 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   final ImagePicker _imagePicker = ImagePicker();
   final DatabaseHelper _databaseHelper = DatabaseHelper();
   Timer? _timeoutTimer;
+
+  // EcoPay notification state
+  bool _isEcoPayNotificationVisible = false;
+  String? _merchantName;
+  Map<String, String>? _qrData;
 
   @override
   void initState() {
@@ -99,7 +105,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   void _handleBarcode(BarcodeCapture capture) {
     print('DEBUG: _handleBarcode called');
     print('DEBUG: Current processing state: $_isProcessing');
-    
+
     if (_isProcessing) {
       print('DEBUG: Already processing, returning');
       return;
@@ -109,7 +115,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
     final List<Barcode> barcodes = capture.barcodes;
     print('DEBUG: Number of barcodes detected: ${barcodes.length}');
-    
+
     if (barcodes.isEmpty) {
       print('DEBUG: No barcodes in capture, returning');
       return;
@@ -117,7 +123,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
 
     final String? code = barcodes.first.rawValue;
     print('DEBUG: Raw barcode value: ${code?.length ?? 0} characters');
-    
+
     if (code == null || code.isEmpty) {
       print('DEBUG: Code is null or empty, returning');
       return;
@@ -146,20 +152,22 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       // Check if user has opted in to EcoPay
       _databaseHelper.getUser(1).then((user) {
         if (user?.ecopayOptIn ?? false) {
-          _showEcoPayDialog(merchantName, qrData);
+          _showEcoPayNotification(merchantName, qrData);
         } else {
           // Navigate to payment confirmation with parsed data
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  PaymentConfirmationScreen(merchantName: merchantName),
-            ),
-          ).then((_) {
-            // Reset processing state when returning from payment
-            setState(() {
-              _isProcessing = false;
-            });
-          });
+          Navigator.of(context)
+              .push(
+                MaterialPageRoute(
+                  builder: (context) =>
+                      PaymentConfirmationScreen(merchantName: merchantName),
+                ),
+              )
+              .then((_) {
+                // Reset processing state when returning from payment
+                setState(() {
+                  _isProcessing = false;
+                });
+              });
         }
       });
     } else {
@@ -239,7 +247,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
   Future<void> _pickImageFromGallery() async {
     try {
       print('DEBUG: Starting gallery image picker');
-      
+
       // Check current photo permission status
       final photoStatus = await Permission.photos.status;
       print('DEBUG: Photo permission status: $photoStatus');
@@ -292,7 +300,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       print('DEBUG: Starting image analysis for: $imagePath');
       print('DEBUG: Pre-analysis processing flag: $_isProcessing');
       print('DEBUG: Subscription active: ${_subscription != null}');
-      
+
       try {
         final bool result = await controller.analyzeImage(imagePath);
         print('DEBUG: Image analysis result: $result');
@@ -312,9 +320,13 @@ class _QrScannerScreenState extends State<QrScannerScreen>
           // Reset processing flag after a delay if no barcode is detected
           _timeoutTimer?.cancel();
           _timeoutTimer = Timer(const Duration(seconds: 5), () {
-            print('DEBUG: Image analysis timeout check - mounted: $mounted, processing: $_isProcessing');
+            print(
+              'DEBUG: Image analysis timeout check - mounted: $mounted, processing: $_isProcessing',
+            );
             if (_isProcessing && mounted) {
-              print('DEBUG: Image analysis timeout - no QR code callback received');
+              print(
+                'DEBUG: Image analysis timeout - no QR code callback received',
+              );
               setState(() {
                 _isProcessing = false;
               });
@@ -323,7 +335,9 @@ class _QrScannerScreenState extends State<QrScannerScreen>
                 'No valid payment QR code found in the selected image.\n\nPlease ensure the image contains a clear, well-lit QR code.',
               );
             } else if (!mounted) {
-              print('DEBUG: Widget disposed before timeout callback - avoiding setState');
+              print(
+                'DEBUG: Widget disposed before timeout callback - avoiding setState',
+              );
             }
           });
         } else {
@@ -336,7 +350,10 @@ class _QrScannerScreenState extends State<QrScannerScreen>
       } catch (e, s) {
         print('CRITICAL: Error during analyzeImage: $e');
         print('CRITICAL: Stacktrace: $s');
-        _showErrorDialog('Analysis Critical Error', 'An unexpected error occurred during image analysis. $e');
+        _showErrorDialog(
+          'Analysis Critical Error',
+          'An unexpected error occurred during image analysis. $e',
+        );
       }
     } catch (e) {
       print('DEBUG: Image analysis error: $e');
@@ -516,6 +533,7 @@ class _QrScannerScreenState extends State<QrScannerScreen>
         MobileScanner(controller: controller, onDetect: _handleBarcode),
         _buildOverlay(),
         if (_isProcessing) _buildProcessingOverlay(),
+        if (_isEcoPayNotificationVisible) _buildEcoPayNotification(),
       ],
     );
   }
@@ -587,12 +605,41 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     );
   }
 
-  Future<void> _showEcoPayDialog(String merchantName, Map<String, String> qrData) async {
+  Widget _buildEcoPayNotification() {
+    if (_merchantName == null || _qrData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final amount =
+        double.tryParse(_qrData!['transactionAmount'] ?? '0.0') ?? 0.0;
+
+    // Calculate round-up amount
+    final double roundUp;
+    final double cents = amount - amount.floor();
+    if (cents == 0) {
+      roundUp = 0.5;
+    } else if (cents <= 0.5) {
+      roundUp = 0.5 - cents;
+    } else {
+      roundUp = 1.0 - cents;
+    }
+
+    return EcoPayNotification(
+      merchantName: _merchantName!,
+      amount: amount,
+      roundUpAmount: roundUp,
+      onSkip: _handleSkipEcoPay,
+      onRoundUp: _handleRoundUpEcoPay,
+      onDismiss: _dismissEcoPayNotification,
+    );
+  }
+
+  void _showEcoPayNotification(
+    String merchantName,
+    Map<String, String> qrData,
+  ) {
     final amount = double.tryParse(qrData['transactionAmount'] ?? '0.0') ?? 0.0;
-    
-    // Simple CO2 calculation: 1.2kg per RM 10, capped at 5kg
-    final co2Emissions = min(amount * 0.12, 5.0);
-    
+
     // Dynamic round-up: round to the nearest RM 0.50 or RM 1.00
     final double roundUp;
     final double cents = amount - amount.floor();
@@ -603,66 +650,73 @@ class _QrScannerScreenState extends State<QrScannerScreen>
     } else {
       roundUp = 1.0 - cents;
     }
-    final roundUpAmount = roundUp.toStringAsFixed(2);
-    final totalAmount = (amount + roundUp).toStringAsFixed(2);
 
-    return showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('🌱 EcoPay Suggestion'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                Text('This meal = ${(amount * 0.14).toStringAsFixed(2)}kg CO₂ emissions'),
-                const SizedBox(height: 10),
-                Text('Round up RM $roundUpAmount to offset?'),
-                const SizedBox(height: 10),
-                const Text('🌳 Plants 0.5 trees in Taman Negara'),
-              ],
+    setState(() {
+      _isEcoPayNotificationVisible = true;
+      _merchantName = merchantName;
+      _qrData = qrData;
+    });
+  }
+
+  void _handleSkipEcoPay() {
+    if (_merchantName != null) {
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (context) =>
+                  PaymentConfirmationScreen(merchantName: _merchantName!),
             ),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Skip'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => PaymentConfirmationScreen(merchantName: merchantName),
-                  ),
-                ).then((_) {
-                  // Reset processing state when returning from payment
-                  setState(() {
-                    _isProcessing = false;
-                  });
-                });
-              },
+          )
+          .then((_) {
+            // Reset processing state when returning from payment
+            setState(() {
+              _isProcessing = false;
+            });
+          });
+    }
+  }
+
+  void _handleRoundUpEcoPay() {
+    if (_merchantName != null && _qrData != null) {
+      final amount =
+          double.tryParse(_qrData!['transactionAmount'] ?? '0.0') ?? 0.0;
+
+      // Calculate round-up amount
+      final double roundUp;
+      final double cents = amount - amount.floor();
+      if (cents == 0) {
+        roundUp = 0.5;
+      } else if (cents <= 0.5) {
+        roundUp = 0.5 - cents;
+      } else {
+        roundUp = 1.0 - cents;
+      }
+
+      Navigator.of(context)
+          .push(
+            MaterialPageRoute(
+              builder: (context) => PaymentConfirmationScreen(
+                merchantName: _merchantName!,
+                ecoPayAmount: roundUp,
+              ),
             ),
-            ElevatedButton(
-              child: const Text('Round Up & Offset'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (context) => PaymentConfirmationScreen(
-                      merchantName: merchantName,
-                      ecoPayAmount: double.parse(roundUpAmount),
-                    ),
-                  ),
-                ).then((_) {
-                  // Reset processing state when returning from payment
-                  setState(() {
-                    _isProcessing = false;
-                  });
-                });
-              },
-            ),
-          ],
-        );
-      },
-    );
+          )
+          .then((_) {
+            // Reset processing state when returning from payment
+            setState(() {
+              _isProcessing = false;
+            });
+          });
+    }
+  }
+
+  void _dismissEcoPayNotification() {
+    setState(() {
+      _isEcoPayNotificationVisible = false;
+      _merchantName = null;
+      _qrData = null;
+      _isProcessing = false;
+    });
   }
 }
 
