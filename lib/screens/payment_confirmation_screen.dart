@@ -33,12 +33,16 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   bool _isProcessing = false;
   bool _enableEcoPay = false;
   double _customEcoPayAmount = 0.0;
+  bool _isManuallyEditingEcoPay = false;
 
   @override
   void initState() {
     super.initState();
     _loadBalance();
     _initializeMerchantSpecificSettings();
+    
+    // Add listener to payment amount field for dynamic EcoPay calculation
+    _amountController.addListener(_onPaymentAmountChanged);
     
     // Initialize EcoPay settings
     if (widget.ecoPayAmount != null && widget.ecoPayAmount! > 0) {
@@ -51,6 +55,23 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   Future<void> _initializeMerchantSpecificSettings() async {
     // Initialize F&B projects if needed
     await MerchantHelper.initializeFnbProjects();
+  }
+
+  void _onPaymentAmountChanged() {
+    // Only update EcoPay amount automatically if user hasn't manually edited it
+    if (!_isManuallyEditingEcoPay && _enableEcoPay) {
+      final paymentAmount = double.tryParse(_amountController.text) ?? 0.0;
+      final calculatedEcoPayAmount = _calculateTwoPercent(paymentAmount);
+      
+      setState(() {
+        _customEcoPayAmount = calculatedEcoPayAmount;
+        _ecoPayController.text = calculatedEcoPayAmount.toStringAsFixed(2);
+      });
+    }
+  }
+
+  double _calculateTwoPercent(double amount) {
+    return amount * 0.02; // 2% of the payment amount
   }
 
   @override
@@ -399,14 +420,14 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                     if (!value) {
                       _customEcoPayAmount = 0.0;
                       _ecoPayController.clear();
+                      _isManuallyEditingEcoPay = false;
                     } else {
-                      // Use merchant-specific recommended amount
-                      double recommendedAmount = MerchantHelper.getRecommendedESGAmount(
-                        widget.merchantName,
-                        double.tryParse(_amountController.text) ?? 50.0
-                      );
-                      _customEcoPayAmount = recommendedAmount;
-                      _ecoPayController.text = recommendedAmount.toStringAsFixed(2);
+                      // Calculate 2% of current payment amount
+                      final paymentAmount = double.tryParse(_amountController.text) ?? 0.0;
+                      final calculatedEcoPayAmount = _calculateTwoPercent(paymentAmount);
+                      _customEcoPayAmount = calculatedEcoPayAmount;
+                      _ecoPayController.text = calculatedEcoPayAmount.toStringAsFixed(2);
+                      _isManuallyEditingEcoPay = false; // Reset manual editing flag
                     }
                   });
                 },
@@ -433,7 +454,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
               ],
               decoration: InputDecoration(
                 labelText: 'EcoPay Amount',
-                hintText: '0.50',
+                hintText: '2% of payment amount',
                 prefixText: 'RM ',
                 prefixStyle: const TextStyle(
                   color: Colors.black87,
@@ -459,6 +480,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
               onChanged: (value) {
                 setState(() {
                   _customEcoPayAmount = double.tryParse(value) ?? 0.0;
+                  _isManuallyEditingEcoPay = true; // User manually edited the amount
                 });
               },
             ),
@@ -632,6 +654,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
 
   @override
   void dispose() {
+    _amountController.removeListener(_onPaymentAmountChanged);
     _amountController.dispose();
     _ecoPayController.dispose();
     super.dispose();
