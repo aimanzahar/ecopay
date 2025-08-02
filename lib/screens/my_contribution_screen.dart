@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../helpers/database_helper.dart';
 import '../models/contribution.dart';
 import '../utils/environmental_impact_calculator.dart';
+import 'transparency_dashboard_screen.dart';
 
 class MyContributionScreen extends StatefulWidget {
   const MyContributionScreen({super.key});
@@ -381,6 +382,42 @@ class _MyContributionScreenState extends State<MyContributionScreen> {
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // Transparency Dashboard Button
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const TransparencyDashboardScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.visibility,
+                color: Colors.white,
+              ),
+              label: const Text(
+                'Transparency Dashboard',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 2,
               ),
             ),
           ),
