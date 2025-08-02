@@ -389,12 +389,16 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
-                'EcoPay Environmental Contribution',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+              Expanded(
+                child: Text(
+                  'EcoPay Environmental Contribution',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
                 ),
               ),
             ],
